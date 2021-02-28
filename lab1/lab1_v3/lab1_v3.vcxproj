@@ -19,8 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MPI_v1.cpp" />
+    <ClCompile Include="MPI_v2.cpp" />
+    <ClCompile Include="nonMPI.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
