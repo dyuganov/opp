@@ -24,7 +24,6 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     int matrixPartCapacity = N * N / size;
     int vectorPartCapacity = N / size;
     auto* matrixPart = new double[matrixPartCapacity];
-    //auto* mulResult = new double[N*N/size];
     auto* mulResult = new double[vectorPartCapacity];
 
     if (rank == 0) {
@@ -36,15 +35,11 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // раздали матрицу по кускам
     MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     mulMatrixAndVector(matrixPart, N / size, x, mulResult);
-    //mulMatrixPart(matrixPart, N/size, x, )
     MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Ax, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
 
     subVector(b, Ax, r);
-    //parallelSubVector(b, Ax, r, vectorPartCapacity);
-
     memcpy(z, r, sizeof(double) * N);
 
     double prevDotProductR = dotProduct(r, r);
@@ -59,27 +54,16 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
         if(rank == 0){
             alpha = dotProduct(r, r) / dotProduct(Az, z);
-
             mulVectorScalar(z, alpha, alphaz);
-
             sumVector(x, alphaz, x);
-            //parallelSumVector(x, alphaz, x, vectorPartCapacity);
-
             mulVectorScalar(Az, alpha, Az);
-
             memcpy(prev_r, r, sizeof(double) * N);
-
             subVector(r, Az, r);
-            //parallelSubVector(b, Ax, r, vectorPartCapacity);
-
             currDotProductR = dotProduct(r, r);
             beta = currDotProductR / prevDotProductR;
             prevDotProductR = currDotProductR;
-
             mulVectorScalar(z, beta, betaz);
-
             sumVector(r, betaz, z);
-            //parallelSumVector(x, alphaz, x, vectorPartCapacity);
 
             ++cnt;
         }
@@ -100,7 +84,6 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     delete[] r;
     delete[] z;
 }
-
 
 int main(int argc, char* argv[]) {
     auto* A = new double[N * N];
