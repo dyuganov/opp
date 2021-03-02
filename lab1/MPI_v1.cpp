@@ -2,113 +2,124 @@
 #include <iostream>
 #include <time.h>
 
-//#include <mpi.h> // for cluster
-#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
-
 #include "Matrix.h"
 
 // vectors duplicate in each process
-double* MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, int size) {
-	if (rank == 0) {
-		initRandMatrix(A);
-		initRandVector(b);
-		initRandVector(x);
-	}
+void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, int size) {
+    double startTime;
+    if (rank == 0) startTime = MPI_Wtime();
 
-	
-	int matrixPartCapacity = N * N / size;
-	//int vectorPartCapacity = N / size;
-	auto* matrixPart = new double[matrixPartCapacity];
-	
-	MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD); // раздали переменные
-	MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // algorithm variables
+    auto* r = new double[N];
+    auto* z = new double[N];
 
-	// раздали матрицу по кускам
-	MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    double alpha = 0, beta = 0;
+    auto* Az = new double[N];
+    auto* Ax = new double[N];
+    auto* alphaz = new double[N];
+    auto* betaz = new double[N];
+    auto* prev_r = new double[N];
 
-	auto* r = new double[N];
-	auto* z = new double[N];
+    // MPI variables
+    int matrixPartCapacity = N * N / size;
+    int vectorPartCapacity = N / size;
+    auto* matrixPart = new double[matrixPartCapacity];
+    //auto* mulResult = new double[N*N/size];
+    auto* mulResult = new double[vectorPartCapacity];
 
-	auto* tmp = new double[N];
-	mulMatrixAndVector(A, x, tmp);
-	subVector(b, tmp, r);
-	delete[] tmp;
+    if (rank == 0) {
+        initRandMatrix(A);
+        initRandVector(b);
+        initRandVector(x);
+    }
 
-	memcpy(z, r, sizeof(double) * N);
+    MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	double alpha = 0, beta = 0;
-	auto* Az = new double[N];
-	auto* alphaz = new double[N];
-	auto* betaz = new double[N];
-	auto* prev_r = new double[N];
+    // раздали матрицу по кускам
+    MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    mulMatrixAndVector(matrixPart, N / size, x, mulResult);
+    //mulMatrixPart(matrixPart, N/size, x, )
+    MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Ax, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
 
-	double prevDoProductR = dotProduct(r, r);
-	double currDoProductR;
-	const double bVectorLength = getVectorLength(b);
-	double rVectorLength = getVectorLength(r);
-	size_t cnt = 0;
-	const double epsilon = 0.00001;
-	while (rVectorLength / bVectorLength >= epsilon) {
-		mulMatrixAndVector(A, z, Az);
-		alpha = dotProduct(r, r) / dotProduct(Az, z);
+    subVector(b, Ax, r);
+    //parallelSubVector(b, Ax, r, vectorPartCapacity);
 
-		mulVectorScalar(z, alpha, alphaz);
+    memcpy(z, r, sizeof(double) * N);
 
-		sumVector(x, alphaz, x);
-		mulVectorScalar(Az, alpha, Az);
+    double prevDotProductR = dotProduct(r, r);
+    double currDotProductR;
+    const double bVectorLength = getVectorLength(b);
+    size_t cnt = 0;
+    const double epsilon = 0.00001;
 
-		memcpy(prev_r, r, sizeof(double) * N);
+    while (getVectorLength(r) / bVectorLength >= epsilon) {
+        mulMatrixAndVector(matrixPart, N / size, z, mulResult);
+        MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Az, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
 
-		subVector(r, Az, r);
+        if(rank == 0){
+            alpha = dotProduct(r, r) / dotProduct(Az, z);
 
-		currDoProductR = dotProduct(r, r);
-		beta = currDoProductR / prevDoProductR;
-		prevDoProductR = currDoProductR;
+            mulVectorScalar(z, alpha, alphaz);
 
-		mulVectorScalar(z, beta, betaz);
-		sumVector(r, betaz, z);
+            sumVector(x, alphaz, x);
+            //parallelSumVector(x, alphaz, x, vectorPartCapacity);
 
-		rVectorLength = getVectorLength(r);
-		++cnt;
-	}
+            mulVectorScalar(Az, alpha, Az);
 
-	std::cout << "Iterations: " << cnt << std::endl;
+            memcpy(prev_r, r, sizeof(double) * N);
 
-	delete[] alphaz;
-	delete[] Az;
-	delete[] betaz;
-	delete[] prev_r;
-	delete[] r;
-	delete[] z;
+            subVector(r, Az, r);
+            //parallelSubVector(b, Ax, r, vectorPartCapacity);
 
-	return x;
+            currDotProductR = dotProduct(r, r);
+            beta = currDotProductR / prevDotProductR;
+            prevDotProductR = currDotProductR;
+
+            mulVectorScalar(z, beta, betaz);
+
+            sumVector(r, betaz, z);
+            //parallelSumVector(x, alphaz, x, vectorPartCapacity);
+
+            ++cnt;
+        }
+        MPI_Bcast(r, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Bcast(z, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }
+
+    if(rank == 0) {
+        std::cout << "Iterations: " << cnt << std::endl;
+        std::cout << "TIME: " << MPI_Wtime() - startTime << std::endl;
+    }
+
+    delete[] alphaz;
+    delete[] Az;
+    delete[] Ax;
+    delete[] betaz;
+    delete[] prev_r;
+    delete[] r;
+    delete[] z;
 }
 
 
 int main(int argc, char* argv[]) {
-	auto* A = new double[N * N];
-	auto* b = new double[N];
-	auto* x = new double[N];
+    auto* A = new double[N * N];
+    auto* b = new double[N];
+    auto* x = new double[N];
 
-	clock_t start = 0, end = 0;
-	int size = 0, rank = 0;
-	MPI_Init(&argc, &argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    clock_t start = 0, end = 0;
+    int size = 0, rank = 0;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    MpiV1NonlinearConjugateGradient(A, b, x, rank, size);
 
-	if(rank == 0) start = clock();
+    MPI_Finalize();
 
-	MpiV1NonlinearConjugateGradient(A, b, x, rank, size);
+    delete[] A;
+    delete[] b;
+    delete[] x;
 
-	if (rank == 0) end = clock();
-	if (rank == 0) std::cout << "Time: " << ((double)(end - start) / CLOCKS_PER_SEC) << " sec." << std::endl;
-
-	delete[] A;
-	delete[] b;
-	delete[] x;
-
-	MPI_Finalize();
-
-	return 0;
+    return 0;
 }

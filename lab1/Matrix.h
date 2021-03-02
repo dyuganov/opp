@@ -1,5 +1,9 @@
 #pragma once
 
+//#include <mpi.h> // for cluster
+#include <memory.h>
+#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
+
 // divided by 1, 2, 4, 8, 16, 24
 #define N (3840)
 
@@ -17,7 +21,7 @@ void initRandMatrix(double* matrix) {
 		}
 	}
 
-	const int mainDiagonalWeighting = 400; // less number - run longer
+	const int mainDiagonalWeighting = 350; // less number - run longer
 	for (size_t i = 0; i < N; ++i) {
 		matrix[i * N + i] += mainDiagonalWeighting;
 	}
@@ -32,12 +36,23 @@ void mulMatrixAndVector(const double* matrix, const double* vector, double* resu
 		}
 	}
 }
+
 // mpi version
-void mulMatrixAndVector(const double* matrix, const double* vector, double* result, const int& rank) {
+/*void mulMatrixAndVector(const double* matrix, const double* vector, double* result, const int& rank) {
     for (size_t i = 0; i < N; ++i) {
         result[i] = 0;
         for (size_t j = 0; j < N; ++j) {
             result[i] += vector[j] * matrix[i * N + j];
+        }
+    }
+}*/
+
+void mulMatrixAndVector(const double* matrix_part, int count, const double* vector, double* result) { //функция умножения части матрицы на вектор
+    memset(result, 0, count * sizeof(double));
+
+    for (int i = 0; i < count; i++){
+        for (int j = 0; j < N; j++) {
+            result[i] += matrix_part[i * N + j] * vector[j];
         }
     }
 }
