@@ -80,7 +80,7 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab1/MPI_v1.cpp">
+		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab1/MPI_v2.cpp">
 			<Option target="lab1"/>
 		</Unit>
 		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab1/Matrix.h">

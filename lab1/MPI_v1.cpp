@@ -45,10 +45,17 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     double prevDotProductR = dotProduct(r, r);
     double currDotProductR;
     const double bVectorLength = getVectorLength(b);
-    size_t cnt = 0;
+    double rVectorLength = getVectorLength(r);
+
+    size_t iterationsCnt = 0;
     const double epsilon = 0.00001;
 
-    while (getVectorLength(r) / bVectorLength >= epsilon) {
+    // проверка на расхождение
+    double prevEpsilonCheck = 0;
+    size_t epsilonGrowCounter = 0;
+    double epsilonCheck = rVectorLength / bVectorLength;
+
+    while (epsilonCheck >= epsilon) {
         mulMatrixAndVector(matrixPart, N / size, z, mulResult);
         MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Az, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
 
@@ -65,14 +72,27 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
             mulVectorScalar(z, beta, betaz);
             sumVector(r, betaz, z);
 
-            ++cnt;
+            //epsilonCheck = rVectorLength / bVectorLength;
+            if(epsilonCheck > prevEpsilonCheck){
+                ++epsilonGrowCounter;
+                prevEpsilonCheck = epsilonCheck;
+            }
+            if(epsilonGrowCounter > 5){
+                perror("Can't resolve the matrix.");
+                std::cout << "Can't resolve the matrix." << std::endl;
+                break;
+            }
+
+            ++iterationsCnt;
         }
         MPI_Bcast(r, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(z, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        rVectorLength = getVectorLength(r);
+        epsilonCheck = rVectorLength / bVectorLength;
     }
 
     if(rank == 0) {
-        std::cout << "Iterations: " << cnt << std::endl;
+        std::cout << "Iterations: " << iterationsCnt << std::endl;
         std::cout << "TIME: " << MPI_Wtime() - startTime << std::endl;
     }
 
@@ -97,7 +117,6 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     MpiV1NonlinearConjugateGradient(A, b, x, rank, size);
-
     MPI_Finalize();
 
     delete[] A;

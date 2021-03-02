@@ -7,7 +7,7 @@ find_package(MPI)
 include_directories(SYSTEM ${MSMPI_INC})
 
 #add_executable(lab1 nonMPI.cpp Matrix.h)
-add_executable(lab1 MPI_v1.cpp Matrix.h)
-#add_executable(lab1 MPI_v2.cpp Matrix.h)
+#add_executable(lab1 MPI_v1.cpp Matrix.h)
+add_executable(lab1 MPI_v2.cpp Matrix.h)
 
 target_link_libraries(${PROJECT_NAME} ${MPI_LIBRARIES})
