@@ -57,16 +57,28 @@ void mulMatrixAndVector(const double* matrix_part, int count, const double* vect
     }
 }
 
+void subVector(const double* first, const double* second, double* result) {
+    for (size_t i = 0; i < N; ++i) {
+        result[i] = first[i] - second[i];
+    }
+}
+
+void subVector(const double* first, const double* second, double* result, const int& len) {
+    for (size_t i = 0; i < len; ++i) {
+        result[i] = first[i] - second[i];
+    }
+}
+
 void sumVector(const double* first, const double* second, double* result) {
 	for (size_t i = 0; i < N; ++i) {
 		result[i] = first[i] + second[i];
 	}
 }
 
-void subVector(const double* first, const double* second, double* result) {
-	for (size_t i = 0; i < N; ++i) {
-		result[i] = first[i] - second[i];
-	}
+void sumVector(const double* first, const double* second, double* result, const int& len) {
+    for (size_t i = 0; i < len; ++i) {
+        result[i] = first[i] + second[i];
+    }
 }
 
 double getVectorLength(const double* vector) {
@@ -77,6 +89,22 @@ double getVectorLength(const double* vector) {
 	return sqrt(result);
 }
 
+double getVectorPartSqr(const double* vector, const int& len){
+    double result = 0;
+    for (size_t i = 0; i < len; ++i) {
+        result += vector[i] * vector[i];
+    }
+    return result;
+}
+
+double getVectorLength(const double* vector, const int& len) {
+    double result = 0;
+    for (size_t i = 0; i < len; ++i) {
+        result += vector[i] * vector[i];
+    }
+    return sqrt(result);
+}
+
 double dotProduct(const double* a, const double* b) {
 	double result = 0;
 	for (size_t i = 0; i < N; ++i) {
@@ -85,8 +113,49 @@ double dotProduct(const double* a, const double* b) {
 	return result;
 }
 
+double dotProduct(const double* a, const double* b, const int& len) {
+    double result = 0;
+    for (size_t i = 0; i < len; ++i) {
+        result += a[i] * b[i];
+    }
+    return result;
+}
+
 void mulVectorScalar(const double* matrix, const double& scalar, double* result) {
 	for (size_t i = 0; i < N; ++i) {
 		result[i] = matrix[i] * scalar;
 	}
+}
+
+void mulVectorScalar(const double* matrix, const double& scalar, double* result, const int& len) {
+    for (size_t i = 0; i < len; ++i) {
+        result[i] = matrix[i] * scalar;
+    }
+}
+
+void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
+    int rows = N / size; //кол-во строк
+    const int begin = rows * rank; //начало в зависимости от отступа
+    const int length = rows; //
+    const int send_len = (int) ceil(N / size); // a.k.a extended
+
+    for (int shift = 0; shift < size; ++shift) { // пересчет Ax для пересылки на каждый процесс, чтобы в конце сумма на
+        for (int i = 0; i < rows; ++i) {           // каждом процессе была одинаковая, иначе в силу разницы в элементах матрицы разделять вектор бы не получилось
+            for (int j = begin; j < begin + length; ++j) {
+                result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
+            }
+        }
+
+        //int pos = (rank + size - shift - 1) % size;
+        //begin = displs[pos];
+        /*begin = rows * rank;
+        length = rows * rank;*/
+        //length = lengths[pos] % N;
+        int send_id = (rank + 1) % size;
+        int recv_id = (rank + size - 1) % size;
+
+        //пересылаем текущий x в другой процесс
+        const int tag = 42;
+        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
 }
