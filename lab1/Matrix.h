@@ -145,13 +145,6 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
                 result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
             }
         }
-
-        /*int pos = (rank + size - shift - 1) % size;
-        begin = displs[pos];
-        begin = rows * rank;
-        length = rows * rank;
-        length = lengths[pos] % N;*/
-
         int send_id = (rank + 1) % size;
         int recv_id = (rank + size - 1) % size;
 
@@ -159,5 +152,4 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         const int tag = 42;
         MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-    //std::cout << "Matrix mul" << std::endl;
 }

@@ -15,9 +15,10 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         initRandVector(x);
     }
 
-    auto* r = new double[N]; // на 0 потоке только?
+/*  auto* r = new double[N]; // на 0 потоке только?
     auto* z = new double[N];
-    auto* Ax = new double[N];
+    auto* Ax = new double[N];*/
+
     double alpha = 0, beta = 0;
 
 /*
@@ -30,46 +31,50 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     // MPI variables
     const int matrixPartCapacity = N * N / size;
-    const int vectorPartCapacity = N / size;
+    const int vectorPartSize = N / size;
     auto* A_matrixPart = new double[matrixPartCapacity];
-    auto* mulMatrixAndVectorResult = new double[vectorPartCapacity];
+    auto* mulMatrixAndVectorResult = new double[vectorPartSize];
 
-    auto* Az_vecPart = new double[vectorPartCapacity];
-    auto* alphaz_vecPart = new double[vectorPartCapacity];
-    auto* betaz_vecPart = new double[vectorPartCapacity];
-    auto* b_vecPart = new double[vectorPartCapacity];
-    auto* x_vecPart = new double[vectorPartCapacity];
-    auto* z_vecPart = new double[vectorPartCapacity];
-    auto* Ax_vecPart = new double[vectorPartCapacity];
+    auto* Az_vecPart = new double[vectorPartSize];
+    auto* alphaz_vecPart = new double[vectorPartSize];
+    auto* betaz_vecPart = new double[vectorPartSize];
+    auto* b_vecPart = new double[vectorPartSize];
+    auto* x_vecPart = new double[vectorPartSize];
+    auto* z_vecPart = new double[vectorPartSize];
+    auto* Ax_vecPart = new double[vectorPartSize];
 
-    MPI_Scatter(x, vectorPartCapacity, MPI_DOUBLE, x_vecPart, vectorPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatter(b, vectorPartCapacity, MPI_DOUBLE, b_vecPart, vectorPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(x, vectorPartSize, MPI_DOUBLE, x_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(b, vectorPartSize, MPI_DOUBLE, b_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, A_matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     mulMatrixAndVectorParts(A_matrixPart, x_vecPart, Ax_vecPart, size, rank);
 
-    auto* r_vecPart = new double[vectorPartCapacity];
-    auto* r_prevVecPart = new double[vectorPartCapacity];
-    subVector(b_vecPart, Ax_vecPart, r_vecPart, vectorPartCapacity);
-    memcpy(z_vecPart, r_vecPart, sizeof(double) * vectorPartCapacity);
+    auto* r_vecPart = new double[vectorPartSize];
+    auto* r_prevVecPart = new double[vectorPartSize];
+    subVector(b_vecPart, Ax_vecPart, r_vecPart, vectorPartSize);
+
+    // не нужон?
+    //MPI_Scatter(r, vectorPartSize, MPI_DOUBLE, r_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    //MPI_Scatter(z, vectorPartSize, MPI_DOUBLE, z_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    memcpy(z_vecPart, r_vecPart, sizeof(double) * vectorPartSize);
     // подготовили начало, нуллевые значения
 
-    double b_VecLength = 0;
+    double b_vecLength = 0;
     if(rank == 0){
-        b_VecLength = getVectorLength(b);
-        MPI_Bcast(&b_VecLength, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        b_vecLength = getVectorLength(b);
     }
+    MPI_Bcast(&b_vecLength, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     // один раз посчитали длину b раздали всем
 
     // (r, r)
-    double r_prevDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartCapacity);
+    double r_prevDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartSize);
     double r_prevDotProduct = 0;
     MPI_Allreduce(&r_prevDotProductPart, &r_prevDotProduct, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     double r_currDotProductPart = 0, r_currDotProduct = 0;
 
     // длина r для первой проверки
     double r_vecLength = 0;
-    double r_vecPartLength = getVectorPartSqr(r_vecPart, vectorPartCapacity);
+    double r_vecPartLength = getVectorPartSqr(r_vecPart, vectorPartSize);
     MPI_Allreduce(&r_vecPartLength, &r_vecLength, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     r_vecLength = sqrt(r_vecLength);
 
@@ -79,62 +84,59 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     // проверка на расхождение
     double prevEpsilonCheck = 0;
     size_t epsilonGrowCounter = 0;
-    double epsilonCheck = r_vecLength / b_VecLength; // первая проверка на EPSILON
-
+    double epsilonCheck = r_vecLength / b_vecLength; // первая проверка на EPSILON
+    std::cout << "epsilonCheck " << epsilonCheck << std::endl;
+    std::cout << "b_vecLength " << b_vecLength << std::endl;
+    std::cout << "r_vecLength " << r_vecLength << std::endl;
     while (epsilonCheck >= EPSILON) {
         mulMatrixAndVectorParts(A_matrixPart, z_vecPart, Az_vecPart, size, rank);
         // получили куски вектора Az в каждом потоке
 
-        double r_r_partDotProductRes = dotProduct(r_vecPart, r_vecPart, vectorPartCapacity);
-        double Az_z_partDotProductRes = dotProduct(Az_vecPart, z_vecPart, vectorPartCapacity);
+        //r_prevDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartSize);
+        double Az_z_partDotProductRes = dotProduct(Az_vecPart, z_vecPart, vectorPartSize);
         double Az_z_dotProductRes = 0;
-        MPI_Allreduce(&r_r_partDotProductRes, &r_prevDotProductPart, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        //MPI_Allreduce(&r_prevDotProduct, &r_prevDotProductPart, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce(&Az_z_partDotProductRes, &Az_z_dotProductRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         alpha = r_prevDotProductPart / Az_z_dotProductRes; // собрали альфу по частям, нашли
 
-        mulVectorScalar(z_vecPart, alpha, alphaz_vecPart, vectorPartCapacity); // альфа и z перемножили, получили alphaz по кускам в потоках
+        mulVectorScalar(z_vecPart, alpha, alphaz_vecPart, vectorPartSize); // альфа и z перемножили, получили alphaz по кускам в потоках
+        sumVector(x_vecPart, alphaz_vecPart, x_vecPart, vectorPartSize);
+        mulVectorScalar(Az_vecPart, alpha, Az_vecPart, vectorPartSize);
+        memcpy(r_prevVecPart, r_vecPart, sizeof(double) * vectorPartSize);
+        subVector(r_prevVecPart, Az_vecPart, r_vecPart, vectorPartSize);
 
-        sumVector(x_vecPart, alphaz_vecPart, x_vecPart, vectorPartCapacity);
-
-        mulVectorScalar(Az_vecPart, alpha, Az_vecPart, vectorPartCapacity);
-
-        memcpy(r_prevVecPart, r_vecPart, sizeof(double) * vectorPartCapacity);
-
-        subVector(r_prevVecPart, Az_vecPart, r_vecPart, vectorPartCapacity);
-
-        r_currDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartCapacity);
+        r_currDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartSize);
         MPI_Allreduce(&r_currDotProductPart, &r_currDotProduct, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         beta = r_currDotProduct / r_prevDotProduct;
         r_prevDotProduct = r_currDotProduct;
         r_prevDotProductPart = r_currDotProduct;
 
-        mulVectorScalar(z_vecPart, beta, betaz_vecPart, vectorPartCapacity);
+        mulVectorScalar(z_vecPart, beta, betaz_vecPart, vectorPartSize);
 
-        sumVector(r_vecPart, betaz_vecPart, z_vecPart, vectorPartCapacity);
+        sumVector(r_vecPart, betaz_vecPart, z_vecPart, vectorPartSize);
 
         if(rank == 0){
             if(epsilonCheck > prevEpsilonCheck){
                 ++epsilonGrowCounter;
                 prevEpsilonCheck = epsilonCheck;
             }
-            std::cout << "EPS check: " << epsilonCheck << std::endl;
-            std::cout << "r_vecLength: " << r_vecLength << std::endl;
+
+
             if(epsilonGrowCounter > 5){
                 perror("Can't resolve the matrix.");
                 std::cout << "Can't resolve the matrix." << std::endl;
                 std::cout << "Iterations: " << iterationsCnt << std::endl;
                 std::cout << "TIME: " << MPI_Wtime() - startTime << std::endl;
                 exit(1);
-                return;
             }
             ++iterationsCnt;
         }
 
-        r_vecPartLength = getVectorPartSqr(r_vecPart, vectorPartCapacity);
+        r_vecPartLength = getVectorPartSqr(r_vecPart, vectorPartSize);
         MPI_Allreduce(&r_vecPartLength, &r_vecLength, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         r_vecLength = sqrt(r_vecLength);
 
-        epsilonCheck = r_vecLength / b_VecLength;
+        epsilonCheck = r_vecLength / b_vecLength;
     }
 
     if(rank == 0) {
@@ -154,9 +156,9 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     delete[] z_vecPart;
     delete[] Ax_vecPart;
 
-    delete[] Ax;
+    /*delete[] Ax;
     delete[] r;
-    delete[] z;
+    delete[] z;*/
 }
 
 int main(int argc, char* argv[]) {
@@ -177,12 +179,12 @@ int main(int argc, char* argv[]) {
     }
 
     MpiV2NonlinearConjugateGradient(A, b, x, rank, size);
-    std::cout << "ret" << std::endl;
+
     MPI_Finalize();
-    std::cout << "fin" << std::endl;
+
     delete[] A;
     delete[] b;
     delete[] x;
-    std::cout << "free" << std::endl;
+
     return 0;
 }

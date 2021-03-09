@@ -22,9 +22,9 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     // MPI variables
     int matrixPartCapacity = N * N / size;
-    int vectorPartCapacity = N / size;
+    int vectorPartSize = N / size;
     auto* matrixPart = new double[matrixPartCapacity];
-    auto* mulResult = new double[vectorPartCapacity];
+    auto* mulResult = new double[vectorPartSize];
 
     if (rank == 0) {
         initRandMatrix(A);
@@ -37,7 +37,7 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     mulMatrixAndVector(matrixPart, N / size, x, mulResult);
-    MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Ax, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
+    MPI_Allgather(mulResult, vectorPartSize, MPI_DOUBLE, Ax, vectorPartSize, MPI_DOUBLE, MPI_COMM_WORLD);
 
     subVector(b, Ax, r);
     memcpy(z, r, sizeof(double) * N);
@@ -57,7 +57,7 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     while (epsilonCheck >= epsilon) {
         mulMatrixAndVector(matrixPart, N / size, z, mulResult);
-        MPI_Allgather(mulResult, vectorPartCapacity, MPI_DOUBLE, Az, vectorPartCapacity, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(mulResult, vectorPartSize, MPI_DOUBLE, Az, vectorPartSize, MPI_DOUBLE, MPI_COMM_WORLD);
 
         if(rank == 0){
             alpha = dotProduct(r, r) / dotProduct(Az, z);
