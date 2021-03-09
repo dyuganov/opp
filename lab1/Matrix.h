@@ -121,36 +121,37 @@ double dotProduct(const double* a, const double* b, const int& len) {
     return result;
 }
 
-void mulVectorScalar(const double* matrix, const double& scalar, double* result) {
+void mulVectorScalar(const double* vec, const double& scalar, double* result) {
 	for (size_t i = 0; i < N; ++i) {
-		result[i] = matrix[i] * scalar;
+		result[i] = vec[i] * scalar;
 	}
 }
 
-void mulVectorScalar(const double* matrix, const double& scalar, double* result, const int& len) {
+void mulVectorScalar(const double* vec, const double& scalar, double* result, const int& len) {
     for (size_t i = 0; i < len; ++i) {
-        result[i] = matrix[i] * scalar;
+        result[i] = vec[i] * scalar;
     }
 }
 
 void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
     int rows = N / size; //кол-во строк
-    const int begin = rows * rank; //начало в зависимости от отступа
-    const int length = rows; //
-    const int send_len = (int) ceil(N / size); // a.k.a extended
+    const int begin = rows * rank; //начало в зависимости от отступа потока
+    const int length = rows;
+    const int send_len = (int) N / size; // должно быть целым
 
-    for (int shift = 0; shift < size; ++shift) { // пересчет Ax для пересылки на каждый процесс, чтобы в конце сумма на
-        for (int i = 0; i < rows; ++i) {           // каждом процессе была одинаковая, иначе в силу разницы в элементах матрицы разделять вектор бы не получилось
+    for (int shift = 0; shift < size; ++shift) {
+        for (int i = 0; i < rows; ++i) {
             for (int j = begin; j < begin + length; ++j) {
                 result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
             }
         }
 
-        //int pos = (rank + size - shift - 1) % size;
-        //begin = displs[pos];
-        /*begin = rows * rank;
-        length = rows * rank;*/
-        //length = lengths[pos] % N;
+        /*int pos = (rank + size - shift - 1) % size;
+        begin = displs[pos];
+        begin = rows * rank;
+        length = rows * rank;
+        length = lengths[pos] % N;*/
+
         int send_id = (rank + 1) % size;
         int recv_id = (rank + size - 1) % size;
 
@@ -158,4 +159,5 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         const int tag = 42;
         MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
+    //std::cout << "Matrix mul" << std::endl;
 }

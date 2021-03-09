@@ -65,7 +65,10 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
             sumVector(x, alphaz, x);
             mulVectorScalar(Az, alpha, Az);
             memcpy(prev_r, r, sizeof(double) * N);
-            subVector(r, Az, r);
+
+            //subVector(r, Az, r);
+            subVector(prev_r, Az, r);
+
             currDotProductR = dotProduct(r, r);
             beta = currDotProductR / prevDotProductR;
             prevDotProductR = currDotProductR;
