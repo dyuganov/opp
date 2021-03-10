@@ -15,25 +15,11 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         initRandVector(x);
     }
 
-/*  auto* r = new double[N]; // на 0 потоке только?
-    auto* z = new double[N];
-    auto* Ax = new double[N];*/
-
     double alpha = 0, beta = 0;
 
-/*
-    auto* Az = new double[N]; // не выделять память?
-    auto* Ax = new double[N]; // сейчас она во всех потоках
-    auto* alphaz = new double[N];
-    auto* betaz = new double[N];
-    auto* prev_r = new double[N];
-*/
-
-    // MPI variables
-    const int matrixPartCapacity = N * N / size;
+    const int matrixPartSize = N * N / size;
     const int vectorPartSize = N / size;
-    auto* A_matrixPart = new double[matrixPartCapacity];
-    auto* mulMatrixAndVectorResult = new double[vectorPartSize];
+    auto* A_matrixPart = new double[matrixPartSize];
 
     auto* Az_vecPart = new double[vectorPartSize];
     auto* alphaz_vecPart = new double[vectorPartSize];
@@ -45,7 +31,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     MPI_Scatter(x, vectorPartSize, MPI_DOUBLE, x_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Scatter(b, vectorPartSize, MPI_DOUBLE, b_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, A_matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(A, matrixPartSize, MPI_DOUBLE, A_matrixPart, matrixPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     mulMatrixAndVectorParts(A_matrixPart, x_vecPart, Ax_vecPart, size, rank);
 
@@ -53,7 +39,6 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     auto* r_prevVecPart = new double[vectorPartSize];
     subVector(b_vecPart, Ax_vecPart, r_vecPart, vectorPartSize);
 
-    // не нужон?
     //MPI_Scatter(r, vectorPartSize, MPI_DOUBLE, r_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     //MPI_Scatter(z, vectorPartSize, MPI_DOUBLE, z_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     memcpy(z_vecPart, r_vecPart, sizeof(double) * vectorPartSize);
@@ -85,19 +70,20 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     double prevEpsilonCheck = 0;
     size_t epsilonGrowCounter = 0;
     double epsilonCheck = r_vecLength / b_vecLength; // первая проверка на EPSILON
-    std::cout << "epsilonCheck " << epsilonCheck << std::endl;
-    std::cout << "b_vecLength " << b_vecLength << std::endl;
-    std::cout << "r_vecLength " << r_vecLength << std::endl;
+
     while (epsilonCheck >= EPSILON) {
         mulMatrixAndVectorParts(A_matrixPart, z_vecPart, Az_vecPart, size, rank);
         // получили куски вектора Az в каждом потоке
 
         //r_prevDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartSize);
-        double Az_z_partDotProductRes = dotProduct(Az_vecPart, z_vecPart, vectorPartSize);
-        double Az_z_dotProductRes = 0;
         //MPI_Allreduce(&r_prevDotProduct, &r_prevDotProductPart, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+        double Az_z_dotProductRes = 0;
+        double Az_z_partDotProductRes = dotProduct(Az_vecPart, z_vecPart, vectorPartSize);
         MPI_Allreduce(&Az_z_partDotProductRes, &Az_z_dotProductRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        alpha = r_prevDotProductPart / Az_z_dotProductRes; // собрали альфу по частям, нашли
+        //alpha = r_prevDotProductPart / Az_z_dotProductRes; // собрали альфу по частям, нашли
+        alpha = r_currDotProduct / Az_z_dotProductRes; // собрали альфу по частям, нашли
+
 
         mulVectorScalar(z_vecPart, alpha, alphaz_vecPart, vectorPartSize); // альфа и z перемножили, получили alphaz по кускам в потоках
         sumVector(x_vecPart, alphaz_vecPart, x_vecPart, vectorPartSize);
@@ -120,8 +106,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
                 ++epsilonGrowCounter;
                 prevEpsilonCheck = epsilonCheck;
             }
-
-
+            //std::cout << "r_length: " << r_vecLength << std::endl;
             if(epsilonGrowCounter > 5){
                 perror("Can't resolve the matrix.");
                 std::cout << "Can't resolve the matrix." << std::endl;
@@ -147,7 +132,6 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     delete[] r_vecPart;
     delete[] r_prevVecPart;
     delete[] A_matrixPart;
-    delete[] mulMatrixAndVectorResult;
     delete[] Az_vecPart;
     delete[] alphaz_vecPart;
     delete[] betaz_vecPart;
@@ -155,14 +139,9 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     delete[] x_vecPart;
     delete[] z_vecPart;
     delete[] Ax_vecPart;
-
-    /*delete[] Ax;
-    delete[] r;
-    delete[] z;*/
 }
 
 int main(int argc, char* argv[]) {
-    //clock_t start = 0, end = 0;
     int size = 0, rank = 0;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);

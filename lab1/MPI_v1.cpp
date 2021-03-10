@@ -21,9 +21,9 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     auto* prev_r = new double[N];
 
     // MPI variables
-    int matrixPartCapacity = N * N / size;
+    int matrixPartSize = N * N / size;
     int vectorPartSize = N / size;
-    auto* matrixPart = new double[matrixPartCapacity];
+    auto* matrixPart = new double[matrixPartSize];
     auto* mulResult = new double[vectorPartSize];
 
     if (rank == 0) {
@@ -35,7 +35,7 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     MPI_Bcast(x, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(b, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    MPI_Scatter(A, matrixPartCapacity, MPI_DOUBLE, matrixPart, matrixPartCapacity, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(A, matrixPartSize, MPI_DOUBLE, matrixPart, matrixPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     mulMatrixAndVector(matrixPart, N / size, x, mulResult);
     MPI_Allgather(mulResult, vectorPartSize, MPI_DOUBLE, Ax, vectorPartSize, MPI_DOUBLE, MPI_COMM_WORLD);
 
