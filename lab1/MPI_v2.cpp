@@ -19,15 +19,23 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     const int matrixPartSize = N * N / size;
     const int vectorPartSize = N / size;
-    auto* A_matrixPart = new double[matrixPartSize];
+    double* A_matrixPart = new double[matrixPartSize];
 
-    auto* Az_vecPart = new double[vectorPartSize];
-    auto* alphaz_vecPart = new double[vectorPartSize];
-    auto* betaz_vecPart = new double[vectorPartSize];
-    auto* b_vecPart = new double[vectorPartSize];
-    auto* x_vecPart = new double[vectorPartSize];
-    auto* z_vecPart = new double[vectorPartSize];
-    auto* Ax_vecPart = new double[vectorPartSize];
+    double* Az_vecPart = new double[vectorPartSize];
+    double* alphaz_vecPart = new double[vectorPartSize];
+    double* betaz_vecPart = new double[vectorPartSize];
+    double* b_vecPart = new double[vectorPartSize];
+    double* x_vecPart = new double[vectorPartSize];
+    double* z_vecPart = new double[vectorPartSize];
+    double* Ax_vecPart = new double[vectorPartSize];
+
+    for(int i = 0; i < vectorPartSize; ++i){
+        Ax_vecPart[i] = 0;
+        z_vecPart[i] = 0;
+        betaz_vecPart[i] = 0;
+        alphaz_vecPart[i] = 0;
+        Az_vecPart[i] = 0;
+    }
 
     MPI_Scatter(x, vectorPartSize, MPI_DOUBLE, x_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Scatter(b, vectorPartSize, MPI_DOUBLE, b_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -35,14 +43,14 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     mulMatrixAndVectorParts(A_matrixPart, x_vecPart, Ax_vecPart, size, rank);
 
-    auto* r_vecPart = new double[vectorPartSize];
-    auto* r_prevVecPart = new double[vectorPartSize];
+    double* r_vecPart = new double[vectorPartSize];
+    double* r_prevVecPart = new double[vectorPartSize];
     subVector(b_vecPart, Ax_vecPart, r_vecPart, vectorPartSize);
 
     //MPI_Scatter(r, vectorPartSize, MPI_DOUBLE, r_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     //MPI_Scatter(z, vectorPartSize, MPI_DOUBLE, z_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     memcpy(z_vecPart, r_vecPart, sizeof(double) * vectorPartSize);
-    // подготовили начало, нуллевые значения
+    // подготовили начало, нулевые значения
 
     double b_vecLength = 0;
     if(rank == 0){
@@ -73,6 +81,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
 
     while (epsilonCheck >= EPSILON) {
         mulMatrixAndVectorParts(A_matrixPart, z_vecPart, Az_vecPart, size, rank);
+        //mulMatrixAndVectorParts1(A_matrixPart, z_vecPart, Az_vecPart, size, rank);
         // получили куски вектора Az в каждом потоке
 
         //r_prevDotProductPart = dotProduct(r_vecPart, r_vecPart, vectorPartSize);
@@ -81,9 +90,8 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         double Az_z_dotProductRes = 0;
         double Az_z_partDotProductRes = dotProduct(Az_vecPart, z_vecPart, vectorPartSize);
         MPI_Allreduce(&Az_z_partDotProductRes, &Az_z_dotProductRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        //alpha = r_prevDotProductPart / Az_z_dotProductRes; // собрали альфу по частям, нашли
-        alpha = r_currDotProduct / Az_z_dotProductRes; // собрали альфу по частям, нашли
-
+        alpha = r_prevDotProduct / Az_z_dotProductRes; // собрали альфу по частям, нашли
+        //alpha = r_currDotProduct / Az_z_dotProductRes; // собрали альфу по частям, нашли
 
         mulVectorScalar(z_vecPart, alpha, alphaz_vecPart, vectorPartSize); // альфа и z перемножили, получили alphaz по кускам в потоках
         sumVector(x_vecPart, alphaz_vecPart, x_vecPart, vectorPartSize);
@@ -95,7 +103,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         MPI_Allreduce(&r_currDotProductPart, &r_currDotProduct, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         beta = r_currDotProduct / r_prevDotProduct;
         r_prevDotProduct = r_currDotProduct;
-        r_prevDotProductPart = r_currDotProduct;
+        //r_prevDotProductPart = r_currDotProductPart;
 
         mulVectorScalar(z_vecPart, beta, betaz_vecPart, vectorPartSize);
 

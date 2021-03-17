@@ -10,21 +10,21 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     if (rank == 0) startTime = MPI_Wtime();
 
     // algorithm variables
-    auto* r = new double[N];
-    auto* z = new double[N];
+    double* r = new double[N];
+    double* z = new double[N];
 
     double alpha = 0, beta = 0;
-    auto* Az = new double[N];
-    auto* Ax = new double[N];
-    auto* alphaz = new double[N];
-    auto* betaz = new double[N];
-    auto* prev_r = new double[N];
+    double* Az = new double[N];
+    double* Ax = new double[N];
+    double* alphaz = new double[N];
+    double* betaz = new double[N];
+    double* prev_r = new double[N];
 
     // MPI variables
     int matrixPartSize = N * N / size;
     int vectorPartSize = N / size;
-    auto* matrixPart = new double[matrixPartSize];
-    auto* mulResult = new double[vectorPartSize];
+    double* matrixPart = new double[matrixPartSize];
+    double* mulResult = new double[vectorPartSize];
 
     if (rank == 0) {
         initRandMatrix(A);

@@ -1,22 +1,26 @@
 #pragma once
 
-//#include <mpi.h> // for cluster
 #include <memory.h>
+#include <cmath>
+#include <random>
+
+//#include <mpi.h> // for cluster
 #include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
 
 // divided by 1, 2, 4, 8, 16, 24
 #define N (3840)
+#define VAL_RANGE (50)
 
 void initRandVector(double* vector) {
 	for (size_t i = 0; i < N; ++i) {
-		vector[i] = rand() % 10;
+		vector[i] = rand() % VAL_RANGE;
 	}
 }
 
 void initRandMatrix(double* matrix) {
 	for (size_t i = 0; i < N; ++i) {
 		for (size_t j = i; j < N; ++j) {
-			matrix[i * N + j] = rand() % 10;
+			matrix[i * N + j] = rand() % VAL_RANGE;
 			matrix[j * N + i] = matrix[i * N + j];
 		}
 	}
@@ -133,6 +137,7 @@ void mulVectorScalar(const double* vec, const double& scalar, double* result, co
     }
 }
 
+/*
 void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
     int rows = N / size; //кол-во строк
     const int begin = rows * rank; //начало в зависимости от отступа потока
@@ -142,7 +147,7 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
     for (int shift = 0; shift < size; ++shift) {
         for (int i = 0; i < rows; ++i) {
             for (int j = begin; j < begin + length; ++j) {
-                result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
+                result[i] += matrixPart[i * N + j] * vectorPart[j - begin]; // BEGIN остается прежним!!!!!
             }
         }
         int send_id = (rank + 1) % size;
@@ -152,4 +157,52 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         const int tag = 42;
         MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
+}*/
+
+void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
+    int rows = N / size; //кол-во строк
+    int begin = rows * rank; //начало в зависимости от отступа потока
+    int length = rows;
+    const int send_len = (int) N / size; // должно быть целым
+
+    for (int shift = 0; shift < size; ++shift) {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = begin; j < begin + length; ++j) {
+                result[i] += matrixPart[i * N + j] * vectorPart[j - begin]; // BEGIN остается прежним!!!!!
+            }
+        }
+
+        int pos = (rank + size - shift - 1) % size;
+        begin = rows * pos;
+        length = length % N;
+
+        int send_id = (rank + 1) % size;
+        int recv_id = (rank + size - 1) % size;
+
+        //пересылаем текущий x в другой процесс
+        const int tag = 42;
+        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
 }
+/*
+
+void mulMatrixAndVectorParts1(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank){
+    const int vecLen = N/size;
+    double *buffer = (double*)malloc(sizeof(double) * vecLen);
+    for(int i = 0; i < vecLen; ++i) {
+        buffer[i] = vectorPart[i];
+    }
+    for(int i = 0 ; i < vecLen; ++i) {
+        result[i] = 0.0f;
+    }
+    for(int p = rank, i = 0; i < size; ++i, p = (p+1)%size) {
+        for(int j = 0; j < vecLen; ++j) {
+            for(int k = 0; k < vecLen; ++k) {
+                result[j] += matrixPart[j * size + k + ((1 * (1 + 1)) + ((rank - 1) * N/rank))] * buffer[k];
+            }
+        }
+        MPI_Sendrecv_replace(buffer, vecLen, MPI_DOUBLE, (rank-1+size)%size, 5, (rank+1)%size, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    free(buffer);
+}
+*/
