@@ -4,12 +4,12 @@
 #include <cmath>
 #include <random>
 
-//#include <mpi.h> // for cluster
-#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
+#include <mpi.h> // for cluster
+//#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
 
 // divided by 1, 2, 4, 8, 16, 24
 #define N (3840)
-#define VAL_RANGE (10)
+#define VAL_RANGE (50)
 
 void initRandVector(double* vector) {
 	for (size_t i = 0; i < N; ++i) {
@@ -25,7 +25,7 @@ void initRandMatrix(double* matrix) {
 		}
 	}
 
-	const int mainDiagonalWeighting = 450; // less number - run longer
+	const int mainDiagonalWeighting = 350; // less number - run longer
 	for (size_t i = 0; i < N; ++i) {
 		matrix[i * N + i] += mainDiagonalWeighting;
 	}
@@ -159,38 +159,10 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
     }
 }*/
 
-/*void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
-    int rows = N / size; //кол-во строк
-    int length = (int)rows;
-    int begin = length * rank; //начало в зависимости от отступа потока
-    const int send_len = (int) N / size; // должно быть целым
-    int sum = 0;
-
-    for (int shift = 0; shift < size; ++shift) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = begin; j < begin + length; ++j) {
-                result[i] += matrixPart[i * N + j] * vectorPart[j - begin]; // BEGIN остается прежним!!!!!
-            }
-        }
-
-        int send_id = (rank + 1) % size;
-        int recv_id = (rank + size - 1) % size;
-
-        int pos = (rank + size - shift - 1) % size;
-        //begin = length * pos;
-        begin = length * recv_id;
-        length = length % N;
-
-        //пересылаем текущий x в другой процесс
-        const int tag = 42;
-        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-}*/
-
 void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
     int rows = N / size; //кол-во строк
-    int length =  N / size;
     int begin = rows * rank; //начало в зависимости от отступа потока
+    int length = rows;
     const int send_len = (int) N / size; // должно быть целым
 
     for (int shift = 0; shift < size; ++shift) {
@@ -201,14 +173,12 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         }
 
         int pos = (rank + size - shift - 1) % size;
+        //begin = rows * pos;
         begin = pos * length;
         length = length % N;
-        /*begin = pos * length;
-        length = length % N;*/
 
         int send_id = (rank + 1) % size;
         int recv_id = (rank + size - 1) % size;
-
 
         //пересылаем текущий x в другой процесс
         const int tag = 42;
