@@ -1,5 +1,5 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/lab1.dir/MPI_v2.cpp.obj"
+  "CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj"
   "lab1.exe"
   "lab1.exe.manifest"
   "lab1.pdb"

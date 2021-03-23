@@ -142,32 +142,32 @@ lab1/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/build
 .PHONY : lab1/fast
 
-MPI_v2.obj: MPI_v2.cpp.obj
+MPI_v2_2.obj: MPI_v2_2.cpp.obj
 
-.PHONY : MPI_v2.obj
+.PHONY : MPI_v2_2.obj
 
 # target to build an object file
-MPI_v2.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2.cpp.obj
-.PHONY : MPI_v2.cpp.obj
+MPI_v2_2.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj
+.PHONY : MPI_v2_2.cpp.obj
 
-MPI_v2.i: MPI_v2.cpp.i
+MPI_v2_2.i: MPI_v2_2.cpp.i
 
-.PHONY : MPI_v2.i
+.PHONY : MPI_v2_2.i
 
 # target to preprocess a source file
-MPI_v2.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2.cpp.i
-.PHONY : MPI_v2.cpp.i
+MPI_v2_2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2_2.cpp.i
+.PHONY : MPI_v2_2.cpp.i
 
-MPI_v2.s: MPI_v2.cpp.s
+MPI_v2_2.s: MPI_v2_2.cpp.s
 
-.PHONY : MPI_v2.s
+.PHONY : MPI_v2_2.s
 
 # target to generate assembly for a file
-MPI_v2.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2.cpp.s
-.PHONY : MPI_v2.cpp.s
+MPI_v2_2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab1.dir\build.make CMakeFiles/lab1.dir/MPI_v2_2.cpp.s
+.PHONY : MPI_v2_2.cpp.s
 
 # Help Target
 help:
@@ -178,9 +178,9 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... lab1
-	@echo ... MPI_v2.obj
-	@echo ... MPI_v2.i
-	@echo ... MPI_v2.s
+	@echo ... MPI_v2_2.obj
+	@echo ... MPI_v2_2.i
+	@echo ... MPI_v2_2.s
 .PHONY : help
 
 

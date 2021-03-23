@@ -76,27 +76,27 @@ include CMakeFiles/lab1.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/lab1.dir/flags.make
 
-CMakeFiles/lab1.dir/MPI_v2.cpp.obj: CMakeFiles/lab1.dir/flags.make
-CMakeFiles/lab1.dir/MPI_v2.cpp.obj: ../MPI_v2.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\Dyuga\Desktop\study_labs\opp\lab1\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab1.dir/MPI_v2.cpp.obj"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles\lab1.dir\MPI_v2.cpp.obj -c C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2.cpp
+CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj: CMakeFiles/lab1.dir/flags.make
+CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj: ../MPI_v2_2.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\Dyuga\Desktop\study_labs\opp\lab1\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles\lab1.dir\MPI_v2_2.cpp.obj -c C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2_2.cpp
 
-CMakeFiles/lab1.dir/MPI_v2.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab1.dir/MPI_v2.cpp.i"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2.cpp > CMakeFiles\lab1.dir\MPI_v2.cpp.i
+CMakeFiles/lab1.dir/MPI_v2_2.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab1.dir/MPI_v2_2.cpp.i"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2_2.cpp > CMakeFiles\lab1.dir\MPI_v2_2.cpp.i
 
-CMakeFiles/lab1.dir/MPI_v2.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab1.dir/MPI_v2.cpp.s"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2.cpp -o CMakeFiles\lab1.dir\MPI_v2.cpp.s
+CMakeFiles/lab1.dir/MPI_v2_2.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab1.dir/MPI_v2_2.cpp.s"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Dyuga\Desktop\study_labs\opp\lab1\MPI_v2_2.cpp -o CMakeFiles\lab1.dir\MPI_v2_2.cpp.s
 
 # Object files for target lab1
 lab1_OBJECTS = \
-"CMakeFiles/lab1.dir/MPI_v2.cpp.obj"
+"CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj"
 
 # External object files for target lab1
 lab1_EXTERNAL_OBJECTS =
 
-lab1.exe: CMakeFiles/lab1.dir/MPI_v2.cpp.obj
+lab1.exe: CMakeFiles/lab1.dir/MPI_v2_2.cpp.obj
 lab1.exe: CMakeFiles/lab1.dir/build.make
 lab1.exe: C:/Program\ Files\ (x86)/Microsoft\ SDKs/MPI/Lib/x86/msmpi.lib
 lab1.exe: CMakeFiles/lab1.dir/linklibs.rsp
