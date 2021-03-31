@@ -80,7 +80,7 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2.cpp">
+		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2_vec.cpp">
 			<Option target="lab2"/>
 		</Unit>
 		<Unit filename="C:/Users/Dyuga/Desktop/study_labs/opp/lab2/CMakeLists.txt">

@@ -76,27 +76,27 @@ include CMakeFiles/lab2.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/lab2.dir/flags.make
 
-CMakeFiles/lab2.dir/lab2.cpp.obj: CMakeFiles/lab2.dir/flags.make
-CMakeFiles/lab2.dir/lab2.cpp.obj: ../lab2.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\Dyuga\Desktop\study_labs\opp\lab2\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab2.dir/lab2.cpp.obj"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles\lab2.dir\lab2.cpp.obj -c C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2.cpp
+CMakeFiles/lab2.dir/lab2_vec.cpp.obj: CMakeFiles/lab2.dir/flags.make
+CMakeFiles/lab2.dir/lab2_vec.cpp.obj: ../lab2_vec.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\Dyuga\Desktop\study_labs\opp\lab2\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab2.dir/lab2_vec.cpp.obj"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles\lab2.dir\lab2_vec.cpp.obj -c C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2_vec.cpp
 
-CMakeFiles/lab2.dir/lab2.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2.dir/lab2.cpp.i"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2.cpp > CMakeFiles\lab2.dir\lab2.cpp.i
+CMakeFiles/lab2.dir/lab2_vec.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2.dir/lab2_vec.cpp.i"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2_vec.cpp > CMakeFiles\lab2.dir\lab2_vec.cpp.i
 
-CMakeFiles/lab2.dir/lab2.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2.dir/lab2.cpp.s"
-	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2.cpp -o CMakeFiles\lab2.dir\lab2.cpp.s
+CMakeFiles/lab2.dir/lab2_vec.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2.dir/lab2_vec.cpp.s"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\G__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Dyuga\Desktop\study_labs\opp\lab2\lab2_vec.cpp -o CMakeFiles\lab2.dir\lab2_vec.cpp.s
 
 # Object files for target lab2
 lab2_OBJECTS = \
-"CMakeFiles/lab2.dir/lab2.cpp.obj"
+"CMakeFiles/lab2.dir/lab2_vec.cpp.obj"
 
 # External object files for target lab2
 lab2_EXTERNAL_OBJECTS =
 
-lab2.exe: CMakeFiles/lab2.dir/lab2.cpp.obj
+lab2.exe: CMakeFiles/lab2.dir/lab2_vec.cpp.obj
 lab2.exe: CMakeFiles/lab2.dir/build.make
 lab2.exe: CMakeFiles/lab2.dir/linklibs.rsp
 lab2.exe: CMakeFiles/lab2.dir/objects1.rsp

@@ -118,9 +118,8 @@ float* invertMatrix(float* A) {
 }
 
 
-int main()
-{
-    //float* A = (float*)calloc(N * N, sizeof(float)); // original matrix
+int main(){
+
     float* A = new float[N*N];
     float* Inv;
 
@@ -132,8 +131,6 @@ int main()
 
     Inv = invertMatrix(A);
 
-   /* free(A);
-    free(Inv);*/
    delete[] A;
    delete[] Inv;
 

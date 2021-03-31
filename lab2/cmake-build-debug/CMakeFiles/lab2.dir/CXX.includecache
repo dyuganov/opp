@@ -6,19 +6,15 @@
 
 #IncludeRegexTransform: 
 
-C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2.cpp
+C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2_vec.cpp
 iostream
 -
 cmath
--
-memory.h
--
-memory
 -
 stdio.h
 -
 stdlib.h
 -
-math.h
+xmmintrin.h
 -
 
