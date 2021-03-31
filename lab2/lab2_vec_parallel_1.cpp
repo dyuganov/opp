@@ -1,10 +1,9 @@
 #include <iostream>
 #include <cmath>
-#include <memory.h>
-#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <xmmintrin.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -12,30 +11,47 @@ using namespace std;
 #define N (400) // размерность матрицы
 #define M (10) // количество членов ряда (итераций)
 
-void matrixSum (float* first, float* second, float* result) {
-
+void matrixSum(const float* first, const float* second, float* result) {
+    //#pragma omp parallel num_threads(4)
+    __m128 sum;
+    __m128* AA;
+    __m128* BB;
     for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            result[i * N + j] = first[i * N + j] + second[i * N + j];
+        AA = (__m128*)(first + i * N);
+        BB = (__m128*)(second + i * N);
+        for (int j = 0; j < N / 4; ++j) {
+            sum = _mm_add_ps(AA[j], BB[j]);
+            _mm_store_ps((result + i * N + j * 4), sum);
         }
     }
 }
 
-void matrixSub (float* first, float* second, float* result) {
+void matrixSub(const float* first, const float* second, float* result) {
+    __m128 sub;
+    __m128* AA;
+    __m128* BB;
     for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            result[i * N + j] = first[i * N + j] - second[i * N + j];
+        AA = (__m128*)(first + i * N);
+        BB = (__m128*)(second + i * N);
+        for (int j = 0; j < N / 4; ++j) {
+            sub = _mm_sub_ps(AA[j], BB[j]);
+            _mm_store_ps(result + i * N + j * 4, sub);
         }
     }
 }
 
-void matrixMult(float* first, float* second, float* result) {
+void matrixMult(const float* first, const float* second, float* result) {
+    __m128 line, column, temp, sum;
     for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            result[i * N + j] = 0;
+        for (int j = 0; j < N; j += 4) {
+            sum = _mm_setzero_ps();
             for (int k = 0; k < N; ++k) {
-                result[i * N + j] += first[i * N + k] * second[k * N + j];
+                column = _mm_set1_ps(first[i * N + k]);
+                line = _mm_load_ps(second + k * N + j);
+                temp = _mm_mul_ps(column, line);
+                sum = _mm_add_ps(sum, temp);
             }
+            _mm_store_ps(result + i * N + j, sum);
         }
     }
 }
@@ -73,13 +89,15 @@ void IMatrixFill(float* I) {
 }
 
 float* invertMatrix(float* A) {
-    float* B = (float*)calloc(N * N, sizeof(float)); // A(T) / a_1 * a_inf
-    float* I = (float*)calloc(N * N, sizeof(float)); // единичная матрица
-    float* BA = (float*)calloc(N * N, sizeof(float)); // B * A
-    float* R = (float*)calloc(N * N, sizeof(float)); // I - BA
-    float* res = (float*)calloc(N * N, sizeof(float)); // result
-    float* buf = (float*)calloc(N * N, sizeof(float)); // buffer
+    float* B = new float[N * N]; // A(T) / a_1 * a_inf
+    float* I = new float[N * N]; // единичная матрица
+    float* BA = new float[N * N]; // B * A
+    float* R = new float[N * N]; // I - BA
+    float* buf = new float[N * N]; // buffer
 
+    float* res = new float[N * N]; // result - его не удалять.
+
+    // макс. сумма по столбцам и строкам
     float a_1 = A_1(A);
     float a_inf = A_inf(A);
 
@@ -97,6 +115,7 @@ float* invertMatrix(float* A) {
     matrixMult(A, B, BA);
     matrixSub(I, BA, R);
 
+
     for (int k = 0; k < M - 1; ++k) {
         matrixMult(I, R, BA);
         for (int i = 0; i < N; ++i) {
@@ -108,18 +127,17 @@ float* invertMatrix(float* A) {
     }
     matrixMult(buf, B, res);
 
-    free(B);
-    free(BA);
-    free(I);
-    free(R);
-    free(buf);
+    delete[] B;
+    delete[] BA;
+    delete[] I;
+    delete[] R;
+    delete[] buf;
     return res;
 }
 
 
 int main(){
-
-    float* A = new float[N*N];
+    float* A = new float[N * N]; // original matrix
     float* Inv;
 
     for (size_t i = 0; i < N; ++i) {
@@ -130,8 +148,8 @@ int main(){
 
     Inv = invertMatrix(A);
 
-   delete[] A;
-   delete[] Inv;
+    delete[] A;
+    delete[] Inv;
 
     return 0;
 }

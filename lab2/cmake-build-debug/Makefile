@@ -142,32 +142,32 @@ lab2/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/build
 .PHONY : lab2/fast
 
-lab2_vec.obj: lab2_vec.cpp.obj
+lab2_vec_parallel_1.obj: lab2_vec_parallel_1.cpp.obj
 
-.PHONY : lab2_vec.obj
+.PHONY : lab2_vec_parallel_1.obj
 
 # target to build an object file
-lab2_vec.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec.cpp.obj
-.PHONY : lab2_vec.cpp.obj
+lab2_vec_parallel_1.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec_parallel_1.cpp.obj
+.PHONY : lab2_vec_parallel_1.cpp.obj
 
-lab2_vec.i: lab2_vec.cpp.i
+lab2_vec_parallel_1.i: lab2_vec_parallel_1.cpp.i
 
-.PHONY : lab2_vec.i
+.PHONY : lab2_vec_parallel_1.i
 
 # target to preprocess a source file
-lab2_vec.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec.cpp.i
-.PHONY : lab2_vec.cpp.i
+lab2_vec_parallel_1.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec_parallel_1.cpp.i
+.PHONY : lab2_vec_parallel_1.cpp.i
 
-lab2_vec.s: lab2_vec.cpp.s
+lab2_vec_parallel_1.s: lab2_vec_parallel_1.cpp.s
 
-.PHONY : lab2_vec.s
+.PHONY : lab2_vec_parallel_1.s
 
 # target to generate assembly for a file
-lab2_vec.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec.cpp.s
-.PHONY : lab2_vec.cpp.s
+lab2_vec_parallel_1.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\lab2.dir\build.make CMakeFiles/lab2.dir/lab2_vec_parallel_1.cpp.s
+.PHONY : lab2_vec_parallel_1.cpp.s
 
 # Help Target
 help:
@@ -178,9 +178,9 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... lab2
-	@echo ... lab2_vec.obj
-	@echo ... lab2_vec.i
-	@echo ... lab2_vec.s
+	@echo ... lab2_vec_parallel_1.obj
+	@echo ... lab2_vec_parallel_1.i
+	@echo ... lab2_vec_parallel_1.s
 .PHONY : help
 
 
