@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2.cpp
+iostream
+-
+cmath
+-
+memory.h
+-
+memory
+-
+stdio.h
+-
+stdlib.h
+-
+math.h
+-
+
