@@ -1,25 +1,28 @@
 #include <iostream>
 #include <cmath>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <xmmintrin.h>
 #include <omp.h>
+#include <ctime>
 
 using namespace std;
 
 //#define N (2028) // размерность матрицы
-#define N (400) // размерность матрицы
+//#define N (400) // размерность матрицы
+#define N (1536) // размерность матрицы
 #define M (10) // количество членов ряда (итераций)
+#define NUM_THREADS 4
 
 void matrixSum(const float* first, const float* second, float* result) {
-    //#pragma omp parallel num_threads(4)
     __m128 sum;
     __m128* AA;
     __m128* BB;
-    for (int i = 0; i < N; ++i) {
+#pragma omp parallel for private(sum, AA, BB)
+    for (int i = 0; i < N; ++i){
         AA = (__m128*)(first + i * N);
         BB = (__m128*)(second + i * N);
-        for (int j = 0; j < N / 4; ++j) {
+        for (int j = 0; j < N / 4; ++j){
             sum = _mm_add_ps(AA[j], BB[j]);
             _mm_store_ps((result + i * N + j * 4), sum);
         }
@@ -30,10 +33,11 @@ void matrixSub(const float* first, const float* second, float* result) {
     __m128 sub;
     __m128* AA;
     __m128* BB;
-    for (int i = 0; i < N; ++i) {
+#pragma omp parallel for private(sub, AA, BB)
+    for (int i = 0; i < N; ++i){
         AA = (__m128*)(first + i * N);
         BB = (__m128*)(second + i * N);
-        for (int j = 0; j < N / 4; ++j) {
+        for (int j = 0; j < N / 4; ++j){
             sub = _mm_sub_ps(AA[j], BB[j]);
             _mm_store_ps(result + i * N + j * 4, sub);
         }
@@ -42,10 +46,12 @@ void matrixSub(const float* first, const float* second, float* result) {
 
 void matrixMult(const float* first, const float* second, float* result) {
     __m128 line, column, temp, sum;
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; j += 4) {
+    int i = 0, j = 0, k = 0;
+#pragma omp parallel for private(i, j, k, sum, temp, line, column) shared(first, second, result)
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < N; j += 4) {
             sum = _mm_setzero_ps();
-            for (int k = 0; k < N; ++k) {
+            for (k = 0; k < N; ++k) {
                 column = _mm_set1_ps(first[i * N + k]);
                 line = _mm_load_ps(second + k * N + j);
                 temp = _mm_mul_ps(column, line);
@@ -58,9 +64,11 @@ void matrixMult(const float* first, const float* second, float* result) {
 
 float A_1(float* A) {
     float max = 0, tmp = 0;
-    for (int i = 0; i < N; ++i) {
+    int i = 0, j = 0;
+#pragma omp parallel for private(i, j) shared(A, max, tmp)
+    for (i = 0; i < N; ++i) {
         tmp = 0;
-        for (int j = 0; j < N; ++j) {
+        for (j = 0; j < N; ++j) {
             tmp += abs(A[i * N + j]);
         }
         if (tmp > max) max = tmp;
@@ -70,9 +78,11 @@ float A_1(float* A) {
 
 float A_inf(float* A) {
     float max = 0, tmp = 0;
-    for (int i = 0; i < N; ++i) {
+    int i = 0, j = 0;
+#pragma omp parallel for private(i, j) shared(A, max, tmp)
+    for (i = 0; i < N; ++i) { // тут параллелить больно
         tmp = 0;
-        for (int j = 0; j < N; ++j) {
+        for (j = 0; j < N; ++j) {
             tmp += abs(A[j * N + i]);
         }
         if (tmp > max) max = tmp;
@@ -81,9 +91,11 @@ float A_inf(float* A) {
 }
 
 void IMatrixFill(float* I) {
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            I[i * N + j] = (i == j);
+    int i = 0, j = 0;
+#pragma omp parallel for private(i, j) shared(I)
+    for (i = 0; i < N; ++i) {
+        for (j = 0; j < N; ++j) {
+            I[i * N + j] = (float)(i == j);
         }
     }
 }
@@ -104,9 +116,12 @@ float* invertMatrix(float* A) {
     IMatrixFill(I); // заполнение единичной матрицы
     IMatrixFill(buf); // тоже единичная, чтобы с ней нормально работали операции
 
+    int i = 0, j = 0, k = 0;
+
     // B
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
+#pragma omp parallel for private(i, j) shared(B, A, a_1, a_inf)
+    for (i = 0; i < N; ++i){
+        for (j = 0; j < N; ++j){
             B[i * N + j] = A[j * N + i] / (a_inf * a_1);
         }
     }
@@ -116,10 +131,10 @@ float* invertMatrix(float* A) {
     matrixSub(I, BA, R);
 
 
-    for (int k = 0; k < M - 1; ++k) {
+    for (k = 0; k < M - 1; ++k){
         matrixMult(I, R, BA);
-        for (int i = 0; i < N; ++i) {
-            for (int j = 0; j < N; ++j) {
+        for (i = 0; i < N; ++i){
+            for (j = 0; j < N; ++j){
                 I[i * N + j] = BA[i * N + j];
             }
         }
@@ -137,11 +152,14 @@ float* invertMatrix(float* A) {
 
 
 int main(){
+    std::time_t begin = std::time(nullptr);
     float* A = new float[N * N]; // original matrix
-    float* Inv;
+    float* Inv = nullptr;
 
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
+    omp_set_num_threads(NUM_THREADS);
+
+    for (size_t i = 0; i < N; ++i){
+        for (size_t j = 0; j < N; ++j){
             A[i * N + j] = (i == j);
         }
     }
@@ -150,6 +168,8 @@ int main(){
 
     delete[] A;
     delete[] Inv;
+
+    cout << "TIME: " << (double)(std::time(nullptr) - begin) << endl;
 
     return 0;
 }

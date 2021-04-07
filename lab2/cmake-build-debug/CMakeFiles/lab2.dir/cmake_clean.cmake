@@ -1,5 +1,5 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/lab2.dir/lab2_vec_parallel_1.cpp.obj"
+  "CMakeFiles/lab2.dir/lab2_vec.cpp.obj"
   "lab2.exe"
   "lab2.exe.manifest"
   "lab2.pdb"

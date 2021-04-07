@@ -5,11 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctime>
 
 using namespace std;
 
 //#define N (2028) // размерность матрицы
-#define N (400) // размерность матрицы
+//#define N (400) // размерность матрицы
+#define N (1536) // размерность матрицы
 #define M (10) // количество членов ряда (итераций)
 
 void matrixSum (float* first, float* second, float* result) {
@@ -118,7 +120,7 @@ float* invertMatrix(float* A) {
 
 
 int main(){
-
+    std::time_t begin = std::time(nullptr);
     float* A = new float[N*N];
     float* Inv;
 
@@ -132,6 +134,8 @@ int main(){
 
    delete[] A;
    delete[] Inv;
+
+   cout << "TIME: " << (double)(std::time(nullptr) - begin) << endl;
 
     return 0;
 }
