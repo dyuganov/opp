@@ -8,8 +8,9 @@
 #include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
 
 // divided by 1, 2, 4, 8, 16, 24
-#define N (3840)
-#define VAL_RANGE (20)
+//#define N (3840)
+#define N (8)
+#define VAL_RANGE (10)
 
 void initRandVector(double* vector) {
 	for (size_t i = 0; i < N; ++i) {
@@ -17,24 +18,43 @@ void initRandVector(double* vector) {
 	}
 }
 
-void initVector(double* vector, const double& val){
+void initVector(double* vector){
     for (size_t i = 0; i < N; ++i) {
-        vector[i] = val;
+        vector[i] = i+1;
     }
 }
-
-void initEMatrix(double* matrix) {
+void initMatrix(double* matrix) {
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = i; j < N; ++j) {
-            matrix[i * N + j] = 1;
+            matrix[i * N + j] = i+1;
             matrix[j * N + i] = matrix[i * N + j];
         }
     }
 
+    const int mainDiagonalWeighting = 1; // less number - run longer
     for (size_t i = 0; i < N; ++i) {
-        matrix[i * N + i] = 2;
+        matrix[i * N + i] += mainDiagonalWeighting;
     }
 }
+
+/*void initVector(double* vector, const double& val){
+    for (size_t i = 0; i < N; ++i) {
+        vector[i] = val;
+    }
+}
+void initMatrix(double* matrix, const double& val) {
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = i; j < N; ++j) {
+            matrix[i * N + j] = val;
+            matrix[j * N + i] = matrix[i * N + j];
+        }
+    }
+
+    const int mainDiagonalWeighting = 1; // less number - run longer
+    for (size_t i = 0; i < N; ++i) {
+        matrix[i * N + i] += mainDiagonalWeighting;
+    }
+}*/
 
 void initRandMatrix(double* matrix) {
 	for (size_t i = 0; i < N; ++i) {
@@ -44,7 +64,7 @@ void initRandMatrix(double* matrix) {
 		}
 	}
 
-	const int mainDiagonalWeighting = 400; // less number - run longer
+	const int mainDiagonalWeighting = 350; // less number - run longer
 	for (size_t i = 0; i < N; ++i) {
 		matrix[i * N + i] += mainDiagonalWeighting;
 	}
@@ -117,6 +137,7 @@ double getVectorPartSqr(const double* vector, const int& len){
     for (size_t i = 0; i < len; ++i) {
         result += vector[i] * vector[i];
     }
+    //return result/2;
     return result;
 }
 
@@ -156,54 +177,7 @@ void mulVectorScalar(const double* vec, const double& scalar, double* result, co
     }
 }
 
-/*void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
-    int rows = N / size;
-    const int begin = rows * rank;
-    const int length = rows;
-    const int send_len = (int) N / size;
-
-    for (int shift = 0; shift < size; ++shift) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = begin; j < begin + length; ++j) {
-                result[i] += matrixPart[i * N + j] * vectorPart[j - begin]; // BEGIN not changes!!!
-            }
-        }
-        int send_id = (rank + 1) % size;
-        int recv_id = (rank + size - 1) % size;
-
-        //send curr x to another proc
-        const int tag = 42;
-        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-}*/
-
-void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
-    int rows = N / size;
-    int length = (int)rows;
-    int begin = length * rank;
-    const int send_len = (int) N / size;
-    //int sum = 0;
-
-    for (int shift = 0; shift < size; ++shift) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = begin; j < begin + length; ++j) {
-                result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
-            }
-        }
-
-        int send_id = (rank + 1) % size;
-        int recv_id = (rank + size - 1) % size;
-
-        int pos = (rank + size - shift - 1) % size;
-        begin = length * pos;
-        length = length % N;
-
-        const int tag = 42;
-        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-}
-
-/*void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) {
+void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) { // error here
     int rows = N / size;
     int length =  N / size;
     int begin = rows * rank;
@@ -220,24 +194,21 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         begin = pos * length;
         length = length % N;
 
-        *//*begin = pos * length;
-        length = length % N;*//*
-
         int send_id = (rank + 1) % size;
         int recv_id = (rank + size - 1) % size;
-
 
         const int tag = 42;
         MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-}*/
+}
 
-void mulColAndVecPart(double* matrixPart, double* vecPart, double* resultVecPart, int vecPartSize){
-    for (int i = 0, strCnt = 0; i < vecPartSize; ++i){
-        if (i % N == 0){
-            ++strCnt;
-        }
-        resultVecPart[i % N] += matrixPart[i] * vecPart[strCnt];
+
+void mulMatrixPartAndVectorPart(const double* matrixPart, const double* vectorPart, double* result, const int& size, const int& rank){
+    const int matrixPartSize = N*N / size;
+    int d = -1;
+    for(int i = 0; i < matrixPartSize; ++i){
+        if (i % N == 0) d++;
+        result[i % N] += vectorPart[d] * matrixPart[i];
     }
 }
 

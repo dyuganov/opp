@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h
+stdint.h
+-
+sal.h
+-
+stdint.h
+-
+
+D:/Projects/Parallels/2/Constants.h
+C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h
+-
+cstdio
+-
+cstdlib
+-
+cmath
+-
+
+D:/Projects/Parallels/2/Matrix.h
+Constants.h
+D:/Projects/Parallels/2/Constants.h
+
+D:/Projects/Parallels/2/main.cpp
+iostream
+-
+Matrix.h
+D:/Projects/Parallels/2/Matrix.h
+

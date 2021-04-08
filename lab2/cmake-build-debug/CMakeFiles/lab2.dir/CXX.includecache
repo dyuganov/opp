@@ -6,16 +6,18 @@
 
 #IncludeRegexTransform: 
 
-C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2_vec.cpp
+C:/Users/Dyuga/Desktop/study_labs/opp/lab2/lab2_vec_parallel.cpp
 iostream
 -
 cmath
 -
-stdio.h
+cstdio
 -
-stdlib.h
+cstdlib
 -
 xmmintrin.h
+-
+omp.h
 -
 ctime
 -

@@ -9,8 +9,6 @@
 
 using namespace std;
 
-//#define N (2028) // размерность матрицы
-//#define N (400) // размерность матрицы
 #define N (1536) // размерность матрицы
 #define M (10) // количество членов ряда (итераций)
 
@@ -135,7 +133,7 @@ int main(){
    delete[] A;
    delete[] Inv;
 
-   cout << "TIME: " << (double)(std::time(nullptr) - begin) << endl;
+    cout << "TIME: " << (std::time(nullptr) - begin) << endl;
 
     return 0;
 }

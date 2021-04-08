@@ -8,11 +8,8 @@
 
 using namespace std;
 
-//#define N (2028) // размерность матрицы
-//#define N (400) // размерность матрицы
 #define N (1536) // размерность матрицы
 #define M (10) // количество членов ряда (итераций)
-#define NUM_THREADS 4
 
 void matrixSum(const float* first, const float* second, float* result) {
     __m128 sum;
@@ -151,11 +148,16 @@ float* invertMatrix(float* A) {
 }
 
 
-int main(){
-    std::time_t begin = std::time(nullptr);
+int main(int argc, char* argv[]){
+    std::time_t begin = std::time(NULL);
     float* A = new float[N * N]; // original matrix
-    float* Inv = nullptr;
+    float* Inv = NULL;
 
+    if(argc != 2) {
+        cout << "Wrong args num" << endl;
+        return 0;
+    }
+    int NUM_THREADS = atoi(argv[0]);
     omp_set_num_threads(NUM_THREADS);
 
     for (size_t i = 0; i < N; ++i){
@@ -169,7 +171,7 @@ int main(){
     delete[] A;
     delete[] Inv;
 
-    cout << "TIME: " << (double)(std::time(nullptr) - begin) << endl;
+    cout << "TIME: " << (std::time(NULL) - begin) << endl;
 
     return 0;
 }

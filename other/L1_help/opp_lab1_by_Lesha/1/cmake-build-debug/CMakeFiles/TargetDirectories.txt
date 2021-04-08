@@ -1,0 +1,3 @@
+D:/Projects/Parallels/1/cmake-build-debug/CMakeFiles/lab1_1nd.dir
+D:/Projects/Parallels/1/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/Projects/Parallels/1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
