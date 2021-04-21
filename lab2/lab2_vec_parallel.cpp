@@ -59,10 +59,24 @@ void matrixMult(const float* first, const float* second, float* result) {
     }
 }
 
+/*float A_1(float* A) {
+    float max = 0, tmp = 0;
+    int i = 0, j = 0;
+#pragma omp parallel for private(i, j, tmp, max) shared(A)
+    for (i = 0; i < N; ++i) {
+        tmp = 0;
+        for (j = 0; j < N; ++j) {
+            tmp += abs(A[i * N + j]);
+        }
+        if (tmp > max) max = tmp;
+    }
+    return max;
+}*/
+
 float A_1(float* A) {
     float max = 0, tmp = 0;
     int i = 0, j = 0;
-#pragma omp parallel for private(i, j) shared(A, max, tmp)
+#pragma omp parallel for private(i, j, tmp) shared(A) reduction(max : max)
     for (i = 0; i < N; ++i) {
         tmp = 0;
         for (j = 0; j < N; ++j) {
@@ -76,8 +90,8 @@ float A_1(float* A) {
 float A_inf(float* A) {
     float max = 0, tmp = 0;
     int i = 0, j = 0;
-#pragma omp parallel for private(i, j) shared(A, max, tmp)
-    for (i = 0; i < N; ++i) { // тут параллелить больно
+#pragma omp parallel for private(i, j, tmp) shared(A) reduction(max : max)
+    for (i = 0; i < N; ++i) {
         tmp = 0;
         for (j = 0; j < N; ++j) {
             tmp += abs(A[j * N + i]);
@@ -153,11 +167,12 @@ int main(int argc, char* argv[]){
     float* A = new float[N * N]; // original matrix
     float* Inv = NULL;
 
-    if(argc != 2) {
+    if(argc == 1) {
         cout << "Wrong args num" << endl;
         return 0;
     }
-    int NUM_THREADS = atoi(argv[0]);
+    int NUM_THREADS = atoi(argv[1]);
+    cout << "NUM_THREADS " << NUM_THREADS << endl;
     omp_set_num_threads(NUM_THREADS);
 
     for (size_t i = 0; i < N; ++i){
