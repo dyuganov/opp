@@ -97,6 +97,7 @@ lab3_EXTERNAL_OBJECTS =
 
 lab3.exe: CMakeFiles/lab3.dir/main.cpp.obj
 lab3.exe: CMakeFiles/lab3.dir/build.make
+lab3.exe: C:/Program\ Files\ (x86)/Microsoft\ SDKs/MPI/Lib/x86/msmpi.lib
 lab3.exe: CMakeFiles/lab3.dir/linklibs.rsp
 lab3.exe: CMakeFiles/lab3.dir/objects1.rsp
 lab3.exe: CMakeFiles/lab3.dir/link.txt
