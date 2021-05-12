@@ -12,15 +12,15 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         /*initRandMatrix(A);
         initRandVector(b);
         initRandVector(x);*/
-        initVector(b);
+        /*initVector(b);
         initVector(x);
-        initMatrix(A);
-        /*initVector(b, 1);
+        initMatrix(A);*/
+        initVector(b, 1);
         initVector(x, 1);
-        initMatrix(A, 1);*/
+        initMatrix(A, 1);
     }
 
-    if(rank == 0) std::cout << "hello0" << std::endl;
+    if(rank == 0) printMatrix(A, N);
 
     const int matrixPartSize = N * N / size;
     const int vectorPartSize = N / size;
@@ -70,6 +70,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         r_vecPart[i] = 0;
         r_prevVecPart[i] = 0;
     }
+
     if(rank == 0) std::cout << "hello2" << std::endl;
     MPI_Scatter(x, vectorPartSize, MPI_DOUBLE, x_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Scatter(b, vectorPartSize, MPI_DOUBLE, b_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -102,7 +103,7 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     if (rank == 0) std::cout << "matrix: ";
     if (rank == 0) for(int i = 0; i < matrixPartSize; ++i) std::cout << Ax_vecPart[i] << ' ';
     if (rank == 0) std::cout << std::endl;*/
-    std::cout << "hello";
+    std::cout << "hello" << std::endl;;
 
     subVector(b_vecPart, Ax_vecPart, r_vecPart, vectorPartSize); // r^0 = b - Ax^0
 
@@ -144,6 +145,10 @@ void MpiV2NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
         //MPI_Reduce_scatter(Az_vecPart, tmp, vecPartsSize, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         double* Az = new double[N];
         MPI_Reduce(Az_vecPart, Az, vectorPartSize, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if(rank == 0) {
+            std::cout << "Az_ vec: " << std::endl;
+            printVector(Az, N);
+        }
         MPI_Scatter(Az, vectorPartSize, MPI_DOUBLE, Az_vecPart, vectorPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         //memcpy(tmp, Az_vecPart, vectorPartSize);
         //for(size_t i = 0; i < vectorPartSize; ++i) Az_vecPart[i] = tmp[i];

@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <cmath>
 #include <random>
+#include <iomanip>
 
 //#include <mpi.h> // for cluster
 #include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
@@ -177,7 +178,7 @@ void mulVectorScalar(const double* vec, const double& scalar, double* result, co
     }
 }
 
-void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) { // error here
+/*void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) { // error here
     int rows = N / size;
     int length =  N / size;
     int begin = rows * rank;
@@ -200,15 +201,46 @@ void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, doubl
         const int tag = 42;
         MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-}
+}*/
 
 
 void mulMatrixPartAndVectorPart(const double* matrixPart, const double* vectorPart, double* result, const int& size, const int& rank){
     const int matrixPartSize = N*N / size;
-    int d = -1;
+    int j = -1;
     for(int i = 0; i < matrixPartSize; ++i){
-        if (i % N == 0) d++;
-        result[i % N] += vectorPart[d] * matrixPart[i];
+        if (i % N == 0) j++;
+        result[i % N] += vectorPart[j] * matrixPart[i];
+    }
+}
+
+void printMatrix(const double* matrix, const size_t& len){
+    for(size_t i = 0; i < len; ++i){
+        for(size_t j = 0; j < len; ++j){
+            std::cout << std::setw(14) << matrix[i * len + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void printVector(const double* vec, const size_t& len){
+    for(size_t i = 0; i < len; ++i){
+        std::cout << vec[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+void initVector(double* vec, int val){
+    for(size_t i= 0; i < N; ++i){
+        vec[i] = val;
+    }
+
+}
+
+void initMatrix(double* matrix, int val){
+    for(size_t i = 0; i < N; ++i){
+        for(size_t j = 0; j < N; ++j){
+            matrix[i*N + j] = val + (i == j);
+        }
     }
 }
 
