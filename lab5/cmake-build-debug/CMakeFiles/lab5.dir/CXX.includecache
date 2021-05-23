@@ -14,13 +14,31 @@ sal.h
 stdint.h
 -
 
-C:/Users/Dyuga/Desktop/study_labs/opp/lab5/main.cpp
+C:/Users/Dyuga/Desktop/study_labs/opp/lab5/TaskList.h
+
+C:/Users/Dyuga/Desktop/study_labs/opp/lab5/includes.h
 iostream
 -
+cmath
+-
+ctime
+-
 pthread.h
-C:/Users/Dyuga/Desktop/study_labs/opp/lab5/pthread.h
+-
+exception
+-
+array
+-
+vector
+-
 mpi.h
 -
 C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h
 -
+TaskList.h
+C:/Users/Dyuga/Desktop/study_labs/opp/lab5/TaskList.h
+
+C:/Users/Dyuga/Desktop/study_labs/opp/lab5/main.cpp
+includes.h
+C:/Users/Dyuga/Desktop/study_labs/opp/lab5/includes.h
 
