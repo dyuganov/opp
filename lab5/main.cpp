@@ -1,10 +1,6 @@
 #include <iostream>
 #include <cmath>
-#include <ctime>
 #include <pthread.h>
-#include <exception>
-#include <array>
-#include <vector>
 
 #ifdef __unix__
 #include <mpi.h>
@@ -14,10 +10,10 @@
 
 #define ITERATIONS_NUM (3)
 
-#define TASK_LIST_SIZE (200)
-#define TASKS_TO_SEND (TASK_LIST_SIZE / (10 * (rank + 1))
+#define TASK_LIST_SIZE (250)
+#define TASKS_TO_SEND (TASK_LIST_SIZE/(10*(procRank+1)))//
 
-#define TASK_END (11)
+#define NO_TASK (11)
 #define TASK_NEED (22)
 #define TASK_SEND (33)
 #define TASK_RECEIVED (44)
@@ -28,7 +24,7 @@
 
 using namespace std;
 
-class Task{
+/*class Task{
 private:
     int repeatNum = 0;
 public:
@@ -37,44 +33,38 @@ public:
     }
     Task(){ repeatNum = 0; }
     int getRepeatNum() const{ return repeatNum; }
-};
+};*/
 
-class TaskList{
-private:
-    array<Task, TASK_LIST_SIZE> tasks = {Task(0)};
-
-public:
-    TaskList() = default;
-    Task& at(const size_t& idx){ return this->tasks.at(idx); }
-    void addTask(const Task& task, const int& idx){ tasks.at(idx) = task; }
-    size_t getTasksNum(){ return tasks.size(); }
-};
-
-TaskList taskList;
 pthread_mutex_t taskListMutex;
 long double calculations = 0;
 size_t iterationCnt = 0;
+int size = 0, procRank = 0;
+int ownCurrentTaskIdx, givenTask;
+int givenTasksCnt, receivedTasksCnt;
+int recvMsg_1, sendMsg_1, recvMsg_2, sendMsg_2;
 
-void generateTasks(TaskList& taskList, size_t& iterationCnt, pthread_mutex_t& taskListMutex, const int& rank, const int& size){
-    pthread_mutex_lock(&taskListMutex);
-    for (int i = rank * TASK_LIST_SIZE; i < (rank + 1) * TASK_LIST_SIZE; i++){
-        Task newTask(static_cast<int>(fabs(50 - i % TASK_LIST_SIZE) * fabs(rank - (iterationCnt % size)) * 1200));
-        taskList.addTask(newTask, i);
+class TaskList{
+private:
+    int* tasks = nullptr;
+public:
+    TaskList() = default;
+    ~TaskList() {
+        delete[] tasks;
+        tasks = nullptr;
     }
-    pthread_mutex_unlock(&taskListMutex);
-}
+    void initList() { tasks = new int[TASK_LIST_SIZE * size]; }
+    int& at(const size_t& idx){ return this->tasks[idx]; }
+    void addTask(const int& task, const size_t& idx){ if(idx < TASK_LIST_SIZE * size) tasks[idx] = task; }
+    int* getArray(){ return tasks; }
+};
+TaskList taskList;
 
-void calculate(long double& calculations, TaskList& taskList, pthread_mutex_t& taskListMutex, const size_t& idx){
-    pthread_mutex_lock(&taskListMutex);
-    for(size_t i = 0; i < taskList.at(idx).getRepeatNum(); ++i){
-        calculations += sin(sin(static_cast<double>(i)));
+bool isJoinError(const int& joinResult){
+    if(joinResult != 0){
+        fprintf(stderr, "pthread_join error\n");
+        return true;
     }
-    pthread_mutex_unlock(&taskListMutex);
-}
-
-void initMPI(int* rank, int* size){
-    MPI_Comm_size(MPI_COMM_WORLD, size);
-    MPI_Comm_rank(MPI_COMM_WORLD, rank);
+    return false;
 }
 
 bool isAttrError(const int& attrResult){
@@ -95,34 +85,139 @@ bool isMutexError(const int& mutexResult){
     return false;
 }
 
-int getNewTask(int supplier){
-    int msgToSend = TASK_NEED;
-    int msgToReceive = 0;
-
-    MPI_Send(&msgToSend, 1, MPI_INT, supplier, REQUEST_TAG, MPI_COMM_WORLD);
-    MPI_Recv(&msgToReceive, 1, MPI_INT, supplier, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    if(msgToReceive == TASK_END) return 0;
-
-    if(msgToReceive == TASK_SEND){
-        int receiveTasksCnt = 0;
-        pthread_mutex_lock(&taskListMutex);
-        MPI_Recv(&receiveTasksCnt, 1, MPI_INT, supplier, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&tasklist[sponsor * TASKS_IN_LIST], receiveTasksCnt, MPI_INT, supplier, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        given_task = supplier * TASKS_IN_LIST; // разобраться в логике передачи, исправить
-        pthread_mutex_unlock(&taskListMutex);
-        return 1;
+void generateTasks() {
+    pthread_mutex_lock(&taskListMutex);
+    for (int i = procRank * TASK_LIST_SIZE; i < (procRank + 1) * TASK_LIST_SIZE; i++) {
+        taskList.at(i) = fabs(50 - i % TASK_LIST_SIZE) * fabs(procRank - (iterationCnt % size)) * 1200;
     }
-    msgToSend = TASK_RECEIVED;
-    MPI_Send(&msgToSend, 1, MPI_INT, supplier, REQUEST_TAG, MPI_COMM_WORLD);
+    pthread_mutex_unlock(&taskListMutex);
 }
 
-void* resolveTask(void* args){
+void calculate(int idx) {
+    for (size_t i = 0; i < taskList.at(idx); i++){
+        calculations += sin(sin(i));
+    }
+}
 
+int getNewTask(const int& provider) {
+    sendMsg_1 = TASK_NEED;
+
+    MPI_Send(&sendMsg_1, 1, MPI_INT, provider, REQUEST_TAG, MPI_COMM_WORLD);
+    MPI_Recv(&recvMsg_1, 1, MPI_INT, provider, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    if (recvMsg_1 == NO_TASK) return false;
+    if (recvMsg_1 == TASK_SEND) {
+        pthread_mutex_lock(&taskListMutex);
+        MPI_Recv(&receivedTasksCnt, 1, MPI_INT, provider, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&(taskList.getArray()[provider * TASK_LIST_SIZE]), receivedTasksCnt, MPI_INT, provider, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        //MPI_Recv(&(taskList.at(provider * TASK_LIST_SIZE)), receivedTasksCnt, MPI_INT, provider, ANSWER_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        givenTask = provider * TASK_LIST_SIZE;
+        pthread_mutex_unlock(&taskListMutex);
+        return true;
+    }
+    sendMsg_1 = TASK_RECEIVED;
+    MPI_Send(&sendMsg_1, 1, MPI_INT, provider, REQUEST_TAG, MPI_COMM_WORLD);
+}
+
+void* resolveTask(void* args) {
+    generateTasks();
+    int tasksCounter = 0;
+    int totalCounter = 0;
+
+    double avgImbalance = 0;
+
+    while (iterationCnt < ITERATIONS_NUM) {
+        if (procRank == 0) std::cout << "__________ ITERATION # " << iterationCnt << " __________" << std::endl;
+        double timeStart = MPI_Wtime();
+        pthread_mutex_lock(&taskListMutex);
+        ownCurrentTaskIdx = TASK_LIST_SIZE * procRank;
+        givenTasksCnt = 0;
+        pthread_mutex_unlock(&taskListMutex);
+
+        while (ownCurrentTaskIdx < TASK_LIST_SIZE * (procRank + 1) - givenTasksCnt){
+            calculate(ownCurrentTaskIdx);
+            pthread_mutex_lock(&taskListMutex);
+            ownCurrentTaskIdx++;
+            pthread_mutex_unlock(&taskListMutex);
+            tasksCounter++;
+        }
+
+        while (true) {
+            for (int pr = 0; pr < size; ++pr){
+                if (pr != procRank && getNewTask(pr)){
+                    for (int i = 0; i < receivedTasksCnt; i++){
+                        calculate(givenTask);
+                        tasksCounter++;
+                        givenTask++;
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+
+        double timeFinish = MPI_Wtime();
+        double maxTime, minTime;
+        std::cout << "Time: " << (timeFinish - timeStart) << " sec. Rank: " << procRank << std::endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        double time = (timeFinish - timeStart);
+        MPI_Reduce(&time, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&time, &minTime, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&tasksCounter, &totalCounter, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (procRank == 0) {
+            std::cout << "Total tasks: " << totalCounter << std::endl;
+            std::cout << "Imbalance: " << maxTime - minTime << std::endl;
+            std::cout << "Imbalance / MAX: " << (maxTime - minTime) / maxTime * 100 << " %" << std::endl;
+            avgImbalance += (maxTime - minTime) / maxTime * 100;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+        std::cout << tasksCounter << " tasks - rank: " << procRank << std::endl;
+        std::cout << calculations << " - current result - rank: " << procRank << std::endl;
+        generateTasks();
+        tasksCounter = 0;
+        iterationCnt++;
+    }
+
+    pthread_mutex_lock(&taskListMutex);
+    sendMsg_1 = WORK_DONE;
+    MPI_Send(&sendMsg_1, 1, MPI_INT, procRank, REQUEST_TAG, MPI_COMM_WORLD);
+    pthread_mutex_unlock(&taskListMutex);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (procRank == 0) std::cout << "Avg imbalance: " << avgImbalance / ITERATIONS_NUM << " %" << std::endl;
+    return nullptr;
 }
 
 void* sendTask(void* args){
-
+    MPI_Status receiver;
+    while (iterationCnt < ITERATIONS_NUM){
+        MPI_Recv(&recvMsg_2, 1, MPI_INT, MPI_ANY_SOURCE, REQUEST_TAG, MPI_COMM_WORLD, &receiver);
+        if (receiver.MPI_SOURCE != procRank && recvMsg_2 == TASK_NEED) {
+            if (ownCurrentTaskIdx >= (procRank + 1) * TASK_LIST_SIZE - givenTasksCnt - 1){
+                sendMsg_2 = NO_TASK;
+                MPI_Send(&sendMsg_2, 1, MPI_INT, receiver.MPI_SOURCE, ANSWER_TAG, MPI_COMM_WORLD);
+                continue;
+            }
+            int* taskForReceiver;
+            int extraTasks = 0;
+            pthread_mutex_lock(&taskListMutex);
+            givenTasksCnt += TASKS_TO_SEND;
+            if (givenTasksCnt + ownCurrentTaskIdx >= (procRank + 1) * TASK_LIST_SIZE - 1){
+                extraTasks = givenTasksCnt + ownCurrentTaskIdx - (procRank + 1) * TASK_LIST_SIZE + 1;
+                givenTasksCnt = (procRank + 1) * TASK_LIST_SIZE - 1 - ownCurrentTaskIdx;
+            }
+            taskForReceiver = &taskList.getArray()[(procRank + 1) * TASK_LIST_SIZE - givenTasksCnt - 1];
+            pthread_mutex_unlock(&taskListMutex);
+            sendMsg_2 = TASK_SEND;
+            int tasksToSend = TASKS_TO_SEND - extraTasks;
+            MPI_Send(&sendMsg_2, 1, MPI_INT, receiver.MPI_SOURCE, ANSWER_TAG, MPI_COMM_WORLD);
+            MPI_Send(&tasksToSend, 1, MPI_INT, receiver.MPI_SOURCE, ANSWER_TAG, MPI_COMM_WORLD);
+            MPI_Send(taskForReceiver, tasksToSend, MPI_INT, receiver.MPI_SOURCE, ANSWER_TAG, MPI_COMM_WORLD);
+            continue;
+        }
+        else if (recvMsg_2 == TASK_RECEIVED) continue;
+        else if (recvMsg_2 == WORK_DONE) break;
+    }
+    return nullptr;
 }
 
 int main(int argc, char* argv[]) {
@@ -133,8 +228,10 @@ int main(int argc, char* argv[]) {
         MPI_Finalize();
         return 0;
     }
-    int size = 0, rank = 0;
-    initMPI(&rank, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &procRank);
+
+    taskList.initList();
 
     pthread_attr_t attrs;
     if(isMutexError(pthread_mutex_init(&taskListMutex, nullptr))) {
@@ -153,20 +250,18 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    double timeStart = 0, timeFinish = 0;
-    if(rank == 0) timeStart = MPI_Wtime();
-
     pthread_t sendingThread;
     pthread_t resolvingTasksThread;
     pthread_create(&sendingThread, &attrs, sendTask, nullptr);
     pthread_create(&resolvingTasksThread, &attrs, resolveTask, nullptr);
-    pthread_join(sendingThread, nullptr);
-    pthread_join(resolvingTasksThread, nullptr);
-
-    if(rank == 0) {
-        timeFinish = MPI_Wtime();
-        cout << "Time: " << timeFinish - timeStart << endl;
+    int joinResult1 = pthread_join(sendingThread, nullptr);
+    int joinResult2 = pthread_join(resolvingTasksThread, nullptr);
+    if(isJoinError(joinResult1) || isJoinError(joinResult2)) {
+        pthread_attr_destroy(&attrs);
+        pthread_mutex_destroy(&taskListMutex);
+        MPI_Finalize();
     }
+
     pthread_attr_destroy(&attrs);
     pthread_mutex_destroy(&taskListMutex);
     MPI_Finalize();
