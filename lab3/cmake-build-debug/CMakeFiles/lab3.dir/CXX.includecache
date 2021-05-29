@@ -15,9 +15,13 @@ stdint.h
 -
 
 C:/Users/Dyuga/Desktop/study_labs/opp/lab3/main.cpp
+stdio.h
+C:/Users/Dyuga/Desktop/study_labs/opp/lab3/stdio.h
 iostream
 -
-windows.h
+cstring
+-
+mpi.h
 -
 C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h
 -

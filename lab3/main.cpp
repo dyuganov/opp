@@ -1,7 +1,5 @@
 #include "stdio.h"
 #include <iostream>
-#include <cmath>
-#include <ctime>
 #include <cstring>
 
 #ifdef __unix__
@@ -18,28 +16,23 @@
 #define X 0
 #define Y 1
 
-void mulMatrix(const double* first, const double* second, double* result, int n1, int n2, int n3){
-    for (int i = 0; i < n1; i++){
-        double* ba = result + i * n3;
-
-        for (int j = 0; j < n3; j++){
-            ba[j] = 0;
-        }
-        for (int k = 0; k < n2; k++){
-            const double* b = second + k * n3;
-            double a = first[i * n2 + k];
-
-            for (int j = 0; j < n3; j++){
+void mulMatrix(const double* A, const double* B, double* AB, int n1, int n2, int n3){
+    for (int i = 0; i < n1; ++i){
+        double* ba = AB + i * n3;
+        for (int j = 0; j < n3; ++j) ba[j] = 0;
+        for (int k = 0; k < n2; ++k){
+            const double* b = B + k * n3;
+            double a = A[i * n2 + k];
+            for (int j = 0; j < n3; ++j){
                 ba[j] += a * b[j];
             }
         }
     }
 }
 
-
 void printMatrix(double* matrix, int n1, int n2){
     std::cout << std::endl;
-    for (size_t i = 0; i < n1 * n2; i++){
+    for (size_t i = 0; i < n1 * n2; ++i){
         if (i % n2 == 0){
             std::cout << std::endl;
         }
@@ -48,28 +41,27 @@ void printMatrix(double* matrix, int n1, int n2){
     std::cout << std::endl;
 }
 
-
 void generateMatrix(double* matrix, int n1, int n2){
-    for (size_t i = 0; i < n1; i++){
-        for (size_t j = 0; j < n2; j++){
+    for (size_t i = 0; i < n1; ++i){
+        for (size_t j = 0; j < n2; ++j){
             matrix[i * n2 + j] = rand() % 10;
         }
     }
 }
 
-void copyMatrix(double* dstMatrix, const double* srcMatix, int n1, int n2, int flag) {
-    if (flag){
-        for (int i = 0; i < n1; i++){
-            for (int j = 0; j < n2 / X_CORES_NUM; j++){
-                dstMatrix[i * n2 / X_CORES_NUM + j] = srcMatix[i * n2 + j];
-            }
+void copyMatrixFromPart(double* A, const double* B, int n1, int n2){
+    for (int i = 0; i < n1 / Y_CORES_NUM; ++i){
+        for (int j = 0; j < n2 / X_CORES_NUM; ++j){
+            A[i * n2 + j] = B[i * n2 / X_CORES_NUM + j];
         }
     }
-    else{
-        for (int i = 0; i < n1 / Y_CORES_NUM; i++){
-            for (int j = 0; j < n2 / X_CORES_NUM; j++){
-                dstMatrix[i * n2 + j] = srcMatix[i * n2 / X_CORES_NUM + j];
-            }
+}
+
+
+void copyMatrixToPart(double* A, const double* B, int n1, int n2) {
+    for (int i = 0; i < n1; ++i){
+        for (int j = 0; j < n2 / X_CORES_NUM; ++j){
+            A[i * n2 / X_CORES_NUM + j] = B[i * n2 + j];
         }
     }
 }
@@ -90,7 +82,7 @@ int main(int argc, char** argv){
     MPI_Comm_rank(oldComm, &rank);
 
     if (size != X_CORES_NUM * Y_CORES_NUM){
-        std::cout << "procNum != X_CORES_NUM * Y_CORES_NUM" << std::endl;
+        fprintf(stderr, "size != X_CORES_NUM * Y_CORES_NUM\n");
         MPI_Finalize();
         return 0;
     }
@@ -98,19 +90,14 @@ int main(int argc, char** argv){
     double* A = nullptr;
     double* B = nullptr;
     double* AB = nullptr;
-    double* A_matrixPart = nullptr;
-    double* B_matrixPart = nullptr;
-    double* AB_matrixPart = nullptr;
-
-    A_matrixPart = new double[(N1 * N2) / Y_CORES_NUM]();
-    B_matrixPart = new double[(N2 * N3) / X_CORES_NUM]();
-    AB_matrixPart = new double[(N1 * N3) / X_CORES_NUM * Y_CORES_NUM]();
+    double* A_matrixPart = new double[(N1 * N2) / Y_CORES_NUM]();
+    double* B_matrixPart = new double[(N2 * N3) / X_CORES_NUM]();
+    double* AB_matrixPart = new double[(N1 * N3) / X_CORES_NUM * Y_CORES_NUM]();
 
     if (rank == 0){
         A = new double[N1 * N2]();
         B = new double[N2 * N3]();
         AB = new double[N1 * N3]();
-
         generateMatrix(A, N1, N2);
         generateMatrix(B, N2, N3);
     }
@@ -122,12 +109,11 @@ int main(int argc, char** argv){
     MPI_Comm_rank(newComm, &rank);
     MPI_Cart_coords(newComm, rank, 2, cords);
 
-    if (rank != 0){
-        MPI_Send(cords, 2, MPI_INT, 0, 30, newComm);
-    }
+    const int TAG1 = 30;
+    if (rank != 0) MPI_Send(cords, 2, MPI_INT, 0, TAG1, newComm);
     if (rank == 0){
-        for (int i = 1; i < size; i++){
-            MPI_Recv(cords, 2, MPI_INT, i, 30, newComm, MPI_STATUS_IGNORE);
+        for (int i = 1; i < size; ++i){
+            MPI_Recv(cords, 2, MPI_INT, i, TAG1, newComm, MPI_STATUS_IGNORE);
             mapping[i] = cords[X] * 10 + cords[Y];
         }
         cords[X] = 0;
@@ -143,7 +129,7 @@ int main(int argc, char** argv){
     MPI_Cart_sub(newComm, remainDims, &colComm);
 
     if (cords[X] == 0){
-        MPI_Scatter(A, (N1*N2) / Y_CORES_NUM, MPI_DOUBLE, A_matrixPart, (N1 * N2) / Y_CORES_NUM, MPI_DOUBLE, 0, colComm); //!!!!!!!!!!!!!!! rank=0
+        MPI_Scatter(A, (N1*N2) / Y_CORES_NUM, MPI_DOUBLE, A_matrixPart, (N1 * N2) / Y_CORES_NUM, MPI_DOUBLE, 0, colComm);
     }
 
     MPI_Bcast(A_matrixPart, (N1 * N2) / Y_CORES_NUM, MPI_DOUBLE, 0, rowComm);
@@ -152,15 +138,15 @@ int main(int argc, char** argv){
     MPI_Type_vector(N2, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &COLUMN);
     MPI_Type_commit(&COLUMN);
 
+    const int TAG2 = 10;
     if (rank == 0){
-        copyMatrix(B_matrixPart, B, N2, N3, 1);
+        copyMatrixToPart(B_matrixPart, B, N2, N3);
         for (int i = 1; i < X_CORES_NUM; i++){
-            MPI_Send(B + i * (N3 / X_CORES_NUM), 1, COLUMN, i, 10, rowComm);
+            MPI_Send(B + i * (N3 / X_CORES_NUM), 1, COLUMN, i, TAG2, rowComm);
         }
     }
-
     if (cords[Y] == 0 && rank != 0){
-        MPI_Recv(B_matrixPart, N2 * (N3 / X_CORES_NUM), MPI_DOUBLE, 0, 10, rowComm, MPI_STATUS_IGNORE);
+        MPI_Recv(B_matrixPart, N2 * (N3 / X_CORES_NUM), MPI_DOUBLE, 0, TAG2, rowComm, MPI_STATUS_IGNORE);
     }
 
     MPI_Bcast(B_matrixPart, (N2 * N3) / X_CORES_NUM, MPI_DOUBLE, 0, colComm);
@@ -171,26 +157,18 @@ int main(int argc, char** argv){
     MPI_Type_vector(N1 / Y_CORES_NUM, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &MINOR);
     MPI_Type_commit(&MINOR);
 
+    const int TAG3 = 20;
     if (rank != 0){
-        MPI_Send(AB_matrixPart, (N1 * N3) / (X_CORES_NUM * Y_CORES_NUM), MPI_DOUBLE, 0, 20, newComm);
+        MPI_Send(AB_matrixPart, (N1 * N3) / (X_CORES_NUM * Y_CORES_NUM), MPI_DOUBLE, 0, TAG3, newComm);
     }
-
     if (rank == 0){
         for (int i = 1; i < size; ++i){
             cords[X] = mapping[i] / 10;
             cords[Y] = mapping[i] - cords[X] * 10;
-            MPI_Recv(AB + cords[X] * (N3 / X_CORES_NUM) + cords[Y] * (N3 * (N1 / Y_CORES_NUM)), 1, MINOR, i, 20, newComm, MPI_STATUS_IGNORE);
+            MPI_Recv(AB + cords[X] * (N3 / X_CORES_NUM) + cords[Y] * (N3 * (N1 / Y_CORES_NUM)), 1, MINOR, i, TAG3, newComm, MPI_STATUS_IGNORE);
         }
-        copyMatrix(AB, AB_matrixPart, N1, N3, 0);
+        copyMatrixFromPart(AB, AB_matrixPart, N1, N3);
     }
-
-    /*MPI_Barrier(oldComm);
-    if (rank == 0)
-    {
-
-        mulMatrix(A, B, AB, N1, N2, N3);
-        printMatrix(AB, N1, N3);
-    }*/
 
     if (rank == 0) {
         timeFinish = MPI_Wtime();
@@ -209,4 +187,3 @@ int main(int argc, char** argv){
     MPI_Finalize();
     return 0;
 }
-
