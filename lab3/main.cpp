@@ -135,7 +135,7 @@ int main(int argc, char** argv){
     MPI_Bcast(A_matrixPart, (N1 * N2) / Y_CORES_NUM, MPI_DOUBLE, 0, rowComm);
 
     MPI_Datatype COLUMN;
-    MPI_Type_vector(N2, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &COLUMN);
+    MPI_Type_vector(N2, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &COLUMN);   
     MPI_Type_commit(&COLUMN);
 
     const int TAG2 = 10;
