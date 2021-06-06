@@ -14,12 +14,10 @@ sal.h
 stdint.h
 -
 
-C:/Users/Dyuga/Desktop/study_labs/opp/lab1/MPI_v2_2.cpp
+C:/Users/Dyuga/Desktop/study_labs/opp/lab1/MPI_v1.cpp
 random
 -
 iostream
--
-time.h
 -
 Matrix.h
 C:/Users/Dyuga/Desktop/study_labs/opp/lab1/Matrix.h
@@ -32,6 +30,8 @@ cmath
 random
 -
 iomanip
+-
+mpi.h
 -
 C:/Program Files (x86)/Microsoft SDKs/MPI/Include/mpi.h
 -

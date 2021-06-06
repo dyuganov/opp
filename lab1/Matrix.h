@@ -1,17 +1,18 @@
-#pragma once
-
 #include <memory.h>
 #include <cmath>
 #include <random>
 #include <iomanip>
 
-//#include <mpi.h> // for cluster
-#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h" // for local use
+#ifdef __unix__
+#include <mpi.h>
+#elif defined(_WIN32) || defined(WIN32)
+#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h"
+#endif
 
 // divided by 1, 2, 4, 8, 16, 24
-//#define N (3840)
-#define N (8)
-#define VAL_RANGE (10)
+#define N (3840)
+//#define N (8)
+#define VAL_RANGE (50)
 
 void initRandVector(double* vector) {
 	for (size_t i = 0; i < N; ++i) {
@@ -38,25 +39,6 @@ void initMatrix(double* matrix) {
     }
 }
 
-/*void initVector(double* vector, const double& val){
-    for (size_t i = 0; i < N; ++i) {
-        vector[i] = val;
-    }
-}
-void initMatrix(double* matrix, const double& val) {
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = i; j < N; ++j) {
-            matrix[i * N + j] = val;
-            matrix[j * N + i] = matrix[i * N + j];
-        }
-    }
-
-    const int mainDiagonalWeighting = 1; // less number - run longer
-    for (size_t i = 0; i < N; ++i) {
-        matrix[i * N + i] += mainDiagonalWeighting;
-    }
-}*/
-
 void initRandMatrix(double* matrix) {
 	for (size_t i = 0; i < N; ++i) {
 		for (size_t j = i; j < N; ++j) {
@@ -80,16 +62,6 @@ void mulMatrixAndVector(const double* matrix, const double* vector, double* resu
 		}
 	}
 }
-
-// mpi version
-/*void mulMatrixAndVector(const double* matrix, const double* vector, double* result, const int& rank) {
-    for (size_t i = 0; i < N; ++i) {
-        result[i] = 0;
-        for (size_t j = 0; j < N; ++j) {
-            result[i] += vector[j] * matrix[i * N + j];
-        }
-    }
-}*/
 
 void mulMatrixAndVector(const double* matrix_part, int count, const double* vector, double* result) {
     memset(result, 0, count * sizeof(double));
@@ -178,45 +150,26 @@ void mulVectorScalar(const double* vec, const double& scalar, double* result, co
     }
 }
 
-/*void mulMatrixAndVectorParts(const double* matrixPart, double* vectorPart, double* result, const int& size, const int& rank) { // error here
-    int rows = N / size;
-    int length =  N / size;
-    int begin = rows * rank;
-    const int send_len = (int) N / size;
+void mulMatrixAndVectorParts(const int& size, const double* matrixPart, const double* vectorPart, double* result){
+    double tmp[N] = {0};
+    const int vecPartSize = N/size;
+    const int matrixPartSize = N;
 
-    for (int shift = 0; shift < size; ++shift) {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = begin; j < begin + length; ++j) {
-                result[i] += matrixPart[i * N + j] * vectorPart[j - begin];
-            }
+    for (int i = 0; i < vecPartSize; ++i) {
+        for (int j = 0; j < matrixPartSize; ++j) {
+            tmp[j] += matrixPart[i*N+j] * vectorPart[i];
         }
-
-        int pos = (rank + size - shift - 1) % size;
-        begin = pos * length;
-        length = length % N;
-
-        int send_id = (rank + 1) % size;
-        int recv_id = (rank + size - 1) % size;
-
-        const int tag = 42;
-        MPI_Sendrecv_replace(vectorPart, send_len, MPI_DOUBLE, send_id, tag, recv_id, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-}*/
-
-
-void mulMatrixPartAndVectorPart(const double* matrixPart, const double* vectorPart, double* result, const int& size, const int& rank){
-    const int matrixPartSize = N*N / size;
-    int j = -1;
-    for(int i = 0; i < matrixPartSize; ++i){
-        if (i % N == 0) j++;
-        result[i % N] += vectorPart[j] * matrixPart[i];
-    }
+    int* recvCounts = new int[size];
+    for(int i = 0; i < size; ++i) recvCounts[i] = vecPartSize;
+    MPI_Reduce_scatter(tmp, result, recvCounts, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    delete[] recvCounts;
 }
 
 void printMatrix(const double* matrix, const size_t& len){
     for(size_t i = 0; i < len; ++i){
         for(size_t j = 0; j < len; ++j){
-            std::cout << std::setw(14) << matrix[i * len + j] << " ";
+            std::cout << std::setw(2) << matrix[i * len + j] << " ";
         }
         std::cout << std::endl;
     }
@@ -243,4 +196,3 @@ void initMatrix(double* matrix, int val){
         }
     }
 }
-

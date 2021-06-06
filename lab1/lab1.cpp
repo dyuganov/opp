@@ -4,11 +4,15 @@
 #include <memory.h>
 #include <cmath>
 
+#ifdef __unix__
+#include <mpi.h>
+#elif defined(_WIN32) || defined(WIN32)
+#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h"
+#endif
+
 // divided by 1, 2, 4, 8, 16, 24
-//#define N (3840)
-//#define VAL_RANGE (50)
-#define N (8)
-#define VAL_RANGE (10)
+#define N (3840)
+#define VAL_RANGE (50)
 
 void initRandVector(double* vector) {
     for (size_t i = 0; i < N; ++i) {
@@ -29,25 +33,6 @@ void initRandMatrix(double* matrix) {
         matrix[i * N + i] += mainDiagonalWeighting;
     }
 }
-
-/*void initMatrix(double* matrix) {
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = i; j < N; ++j) {
-            matrix[i * N + j] = 1;
-            matrix[j * N + i] = matrix[i * N + j];
-        }
-    }
-
-    const int mainDiagonalWeighting = 1; // less number - run longer
-    for (size_t i = 0; i < N; ++i) {
-        matrix[i * N + i] += mainDiagonalWeighting;
-    }
-}
-void initVector(double* vector) {
-    for (size_t i = 0; i < N; ++i) {
-        vector[i] = 1;
-    }
-}*/
 
 void mulMatrixAndVector(const double* matrix, const double* vector, double* result) {
     for (size_t i = 0; i < N; ++i) {
@@ -120,46 +105,25 @@ double* nonMpiNonlinearConjugateGradient(double* A, double* b, double* x) {
 	double* betaz = new double[N];
 	double* prev_r = new double[N];
 
-	/*initRandMatrix(A);
+	initRandMatrix(A);
 	initRandVector(b);
-	initRandVector(x);*/
-
-	initVector(b);
-	initVector(x);
-	initMatrix(A);
-
+	initRandVector(x);
 
 	double* tmp = new double[N];
 
-    std::cout << "matrix: ";
-    for(int i = 0; i < N*N; ++i) std::cout << A[i] << ' ';
-    std::cout << std::endl;
-
 	mulMatrixAndVector(A, x, tmp);
-
-    std::cout << "matrix: ";
-    for(int i = 0; i < N*N; ++i) std::cout << tmp[i] << ' ';
-    std::cout << std::endl;
 
 	subVector(b, tmp, r);
 
-    std::cout << "r_vector in beginning: ";
-    for(int i = 0; i < N; ++i) std::cout << r[i] << ' ';
-    std::cout << std::endl;
 	delete[] tmp;
 
 	memcpy(z, r, sizeof(double) * N);
 
 	double prevDoProductR = dotProduct(r, r);
 
-    std::cout << "Dot 1: " << prevDoProductR << std::endl;
-
 	double currDoProductR;
 	const double bVectorLength = getVectorLength(b);
 	double rVectorLength = getVectorLength(r);
-
-    std::cout << "rVectorLength: " << rVectorLength << std::endl;
-    std::cout << "bVectorLength: " << bVectorLength << std::endl;
 
 	size_t cnt = 0;
 	const double epsilon = 0.00001;
@@ -167,9 +131,6 @@ double* nonMpiNonlinearConjugateGradient(double* A, double* b, double* x) {
 	while (rVectorLength / bVectorLength >= epsilon) {
 		mulMatrixAndVector(A, z, Az);
 		alpha = dotProduct(r, r) / dotProduct(Az, z);
-        std::cout << "dotProduct(r, r) " << dotProduct(r, r) << std::endl;
-        std::cout << "dotProduct(Az, z) " << dotProduct(Az, z) << std::endl;
-        std::cout << "alpha " << alpha << std::endl;
 
 		mulVectorScalar(z, alpha, alphaz);
 
@@ -180,9 +141,6 @@ double* nonMpiNonlinearConjugateGradient(double* A, double* b, double* x) {
 
 		currDoProductR = dotProduct(r, r);
 		beta = currDoProductR / prevDoProductR;
-        std::cout << "currDoProductR " << currDoProductR << std::endl;
-        std::cout << "prevDoProductR " << prevDoProductR << std::endl;
-        std::cout << "beta " << beta << std::endl;
 		prevDoProductR = currDoProductR;
 
         mulVectorScalar(z, beta, betaz);
@@ -206,12 +164,18 @@ double* nonMpiNonlinearConjugateGradient(double* A, double* b, double* x) {
 
 
 int main(int argc, char* argv[]) {
+  int size = 0, rank = 0;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	double* A = new double[N * N];
 	double* b = new double[N];
 	double* x = new double[N];
 
 	clock_t start, end;
+
+  std::cout << "Name: " << argv[0] << std::endl << "ProcNum: " << size <<std::endl;
 
 	start = clock();
 	nonMpiNonlinearConjugateGradient(A, b, x);
@@ -222,6 +186,7 @@ int main(int argc, char* argv[]) {
 	delete[] A;
 	delete[] b;
 	delete[] x;
+  MPI_Finalize();
 
 	return 0;
 }

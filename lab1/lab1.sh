@@ -6,18 +6,17 @@
 cd $PBS_O_WORKDIR
 
 MPI_PATH=/opt/intel/impi/5.0.1.035/intel64/bin
-SRC=MPI_v2_2.cpp
-SRCLIB=Matrix.h
+SRC=lab1.cpp
 EXE=$SRC.out
 MPI_NP=$(wc -l $PBS_NODEFILE | awk '{ print $1 }')
 
 echo "Run on node: `uname -n`"
-echo "Working dir: $PBS_O_WORKDIR"
-echo "Proc num: $MPI_NP"
+echo "Number of MPI process: $MPI_NP"
+echo "Workong dir: $PBS_O_WORKDIR"
 
 echo "Compiling $SRC $SRCLIB"
-$MPI_PATH/mpicxx -std=c++11 $SRC $SRCLIB -o $EXE
+mpiicc -std=c++11 $SRC -o $EXE
+# $MPI_PATH/mpicxx -std=c++11 $SRC -o $EXE
 
-echo "Running $EXE"
-#$MPI_PATH/mpirun -trace -machinefile $PBS_NODEFILE -np $MPI_NP ./$EXE
-$MPI_PATH/mpirun $PBS_NODEFILE -np $MPI_NP ./$EXE
+echo "Running $SRC $SRCLIB"
+mpirun -np $MPI_NP ./$EXE

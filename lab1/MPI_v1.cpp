@@ -1,10 +1,8 @@
 #include <random>
 #include <iostream>
-#include <time.h>
 
 #include "Matrix.h"
 
-// vectors duplicate in each process
 void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, int size) {
     double startTime;
     if (rank == 0) startTime = MPI_Wtime();
@@ -38,7 +36,6 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
     MPI_Scatter(A, matrixPartSize, MPI_DOUBLE, matrixPart, matrixPartSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     mulMatrixAndVector(matrixPart, N / size, x, mulResult);
     MPI_Allgather(mulResult, vectorPartSize, MPI_DOUBLE, Ax, vectorPartSize, MPI_DOUBLE, MPI_COMM_WORLD);
-
     subVector(b, Ax, r);
     memcpy(z, r, sizeof(double) * N);
 
@@ -78,11 +75,9 @@ void MpiV1NonlinearConjugateGradient(double* A, double* b, double* x, int rank, 
                 prevEpsilonCheck = epsilonCheck;
             }
             if(epsilonGrowCounter > 5){
-                perror("Can't resolve the matrix.");
-                std::cout << "Can't resolve the matrix." << std::endl;
+                fprintf(stderr, "Can't resolve the matrix.\n");
                 break;
             }
-
             ++iterationsCnt;
         }
         MPI_Bcast(r, N, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -110,11 +105,12 @@ int main(int argc, char* argv[]) {
     auto* b = new double[N];
     auto* x = new double[N];
 
-    clock_t start = 0, end = 0;
     int size = 0, rank = 0;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if(rank == 0) std::cout << "Name: " << argv[0] << std::endl << "ProcNum: " << size <<std::endl;
 
     MpiV1NonlinearConjugateGradient(A, b, x, rank, size);
     MPI_Finalize();
