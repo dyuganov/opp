@@ -4,12 +4,6 @@
 #include <memory.h>
 #include <cmath>
 
-#ifdef __unix__
-#include <mpi.h>
-#elif defined(_WIN32) || defined(WIN32)
-#include "C:\Program Files (x86)\Microsoft SDKs\MPI\Include\mpi.h"
-#endif
-
 // divided by 1, 2, 4, 8, 16, 24
 #define N (3840)
 #define VAL_RANGE (50)
@@ -165,9 +159,6 @@ double* nonMpiNonlinearConjugateGradient(double* A, double* b, double* x) {
 
 int main(int argc, char* argv[]) {
   int size = 0, rank = 0;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	double* A = new double[N * N];
 	double* b = new double[N];
@@ -186,7 +177,6 @@ int main(int argc, char* argv[]) {
 	delete[] A;
 	delete[] b;
 	delete[] x;
-  MPI_Finalize();
 
 	return 0;
 }

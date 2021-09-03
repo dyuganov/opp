@@ -174,12 +174,12 @@ int main(int argc, char** argv){
         Phi = tmp;
 
         if (rank != 0){
-            MPI_Isend(&prevPhi[0], Nx * Ny, MPI_DOUBLE, rank - 1, 10, MPI_COMM_WORLD, &requests[0]); //MPI_Request
+            MPI_Isend(&prevPhi[0], Nx * Ny, MPI_DOUBLE, rank - 1, 10, MPI_COMM_WORLD, &requests[0]);
             MPI_Irecv(downLayer, Nx * Ny, MPI_DOUBLE, rank - 1, 20, MPI_COMM_WORLD, &requests[1]);
         }
 
         if (rank != procNum - 1){
-            MPI_Isend(&prevPhi[(layerHeight - 1) * Nx * Ny], Nx * Ny, MPI_DOUBLE, rank + 1, 20, MPI_COMM_WORLD, &requests[2]); //MPI_Request
+            MPI_Isend(&prevPhi[(layerHeight - 1) * Nx * Ny], Nx * Ny, MPI_DOUBLE, rank + 1, 20, MPI_COMM_WORLD, &requests[2]);
             MPI_Irecv(upLayer, Nx * Ny, MPI_DOUBLE, rank + 1, 10, MPI_COMM_WORLD, &requests[3]);
         }
 

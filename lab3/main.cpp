@@ -119,13 +119,13 @@ int main(int argc, char** argv){
         cords[X] = 0;
         cords[Y] = 0;
     }
-
+    
     remainDims[Y] = 0;
-    remainDims[X] = 1; // dims = {1, 0}
+    remainDims[X] = 1;
     MPI_Cart_sub(newComm, remainDims, &rowComm);
 
     remainDims[Y] = 1;
-    remainDims[X] = 0; // dims = {0, 1}
+    remainDims[X] = 0;
     MPI_Cart_sub(newComm, remainDims, &colComm);
 
     if (cords[X] == 0){
@@ -135,7 +135,7 @@ int main(int argc, char** argv){
     MPI_Bcast(A_matrixPart, (N1 * N2) / Y_CORES_NUM, MPI_DOUBLE, 0, rowComm);
 
     MPI_Datatype COLUMN;
-    MPI_Type_vector(N2, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &COLUMN);   
+    MPI_Type_vector(N2, N3 / X_CORES_NUM, N3, MPI_DOUBLE, &COLUMN);
     MPI_Type_commit(&COLUMN);
 
     const int TAG2 = 10;
